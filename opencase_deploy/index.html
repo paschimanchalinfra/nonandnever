@@ -14,7 +14,7 @@
   <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
   <style>
-    :root{ --brand:#0E2A53; --accent:#7BC043; --bg:#f6f8fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb; --header-height:60px; }
+    :root{ --brand:#0E2A53; --accent:#7BC043; --bg:#f6f8fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb; --header-height:60px; --success:#10b981; --warning:#f59e0b; --danger:#ef4444; }
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);padding-top:var(--header-height);padding-bottom:20px;height:100vh;overflow:hidden;} 
     .scroll-container { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; } 
@@ -74,7 +74,7 @@
     .pager{display:flex;gap:12px;justify-content:center;margin-top:20px;align-items:center;padding-bottom:40px;}
     .link{color:var(--brand);cursor:pointer;font-weight:600;padding:8px 16px; background:#e0e7ff; border-radius:8px;}
 
-    /* DASHBOARD (REVISED) */
+    /* DASHBOARD */
     .dash-filter-bar { display: flex; gap: 8px; background: #fff; padding: 12px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; flex-wrap: wrap; }
     .dash-select { padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; flex: 1; min-width: 100px; }
     .dash-row-top { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
@@ -85,13 +85,16 @@
     .matrix-table th { background: #f3f4f6; padding: 8px; text-align: center; border: 1px solid var(--border); }
     .matrix-table td { padding: 8px; text-align: center; border: 1px solid var(--border); }
 
-    /* LOADING */
+    /* LOADING & TOAST */
     #loadingOverlay { position: fixed; inset:0; background: rgba(255,255,255,0.9); z-index: 2000; display: flex; flex-direction:column; justify-content: center; align-items: center; backdrop-filter: blur(2px); transition:opacity 0.2s; }
     .spinner { width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 0.8s linear infinite; margin-bottom:12px;}
     @keyframes spin { to { transform: rotate(360deg); } }
     .error-msg { color: #dc2626; font-weight: 600; text-align: center; max-width: 300px; }
     .error-details { color: #6b7280; font-size: 11px; margin-top: 8px; max-width: 300px; word-break: break-all; }
     
+    .toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 12px; z-index: 3000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; }
+
     /* FORM VIEW OVERLAY */
     #viewForm { position: fixed; inset: 0; top: var(--header-height); background: #fff; z-index: 1050; display: flex; flex-direction: column; }
     #viewForm.hidden { display: none !important; }
@@ -99,17 +102,24 @@
     .form-frame-container { flex: 1; width: 100%; height: 100%; overflow: hidden; background: #fff; }
     iframe { width: 100%; height: 100%; border: none; }
 
-    /* NAVIGATION FULL SCREEN (UPDATED) */
+    /* NAVIGATION FULL SCREEN (UPDATED UX) */
     #viewNavigation { position: fixed; inset: 0; top: 0; background: #fff; z-index: 2000; display: flex; flex-direction: column; }
     .nav-header { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 999; display: flex; gap: 10px; pointer-events: none; align-items: flex-start; }
     .nav-header > button { pointer-events: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #fff; color: #333; border: none; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-    .nav-info-box { background: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); pointer-events: auto; display: flex; flex-direction: column; max-width: 60%; }
-    .nav-dest-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+    
+    .nav-info-box { background: rgba(255, 255, 255, 0.95); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); pointer-events: auto; display: flex; flex-direction: column; max-width: 60%; backdrop-filter: blur(4px); }
+    .nav-dest-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
     .nav-dest-val { font-size: 14px; color: var(--brand); font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .gps-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: inline-block; }
+    .gps-status-dot.active { background: var(--success); box-shadow: 0 0 4px var(--success); }
+    .gps-status-dot.weak { background: var(--warning); }
+    .gps-status-dot.lost { background: var(--danger); }
+    
     #navMapDiv { flex: 1; width: 100%; height: 100%; background: #e5e7eb; }
 
     /* GPS PUCK */
-    .gps-puck { width: 20px; height: 20px; background: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.4); position: relative; }
+    .gps-puck { width: 20px; height: 20px; background: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.4); position: relative; transition: transform 0.5s linear; }
     .gps-puck::after { content: ''; display: block; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(66, 133, 244, 0.4); animation: pulse 2s ease-out infinite; z-index: -1; pointer-events: none; }
     @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
     .leaflet-routing-container { display: none !important; }
@@ -119,10 +129,7 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbx5W8xXL51bu-0PqM0KBcztUMixZtoNARjVn8hefHbPZi-wvT4iPyX6dWAR1JgWA7TQXw/exec"; 
 
-    // Initialize google object if missing
     window.google = window.google || {};
-    
-    // Polyfill script.run ONLY if it doesn't exist
     if (!window.google.script) {
       window.google.script = { 
         run: { 
@@ -167,6 +174,8 @@
     <div style="font-weight:600;color:var(--brand)" id="loadingText">Starting App...</div>
     <div id="errorDetails" class="error-details"></div>
   </div>
+  
+  <div id="toast" class="toast">Notification</div>
 
   <div class="drawer-overlay" id="drawerOverlay"></div>
   <div class="drawer" id="drawer">
@@ -245,10 +254,9 @@
             <div id="chartDoughnut" class="chart-container"></div>
           </div>
           <div class="dash-panel">
-            <h3 style="margin:0 0 10px 0;font-size:14px">Performance Matrix (Today vs Total)</h3>
+            <h3 style="margin:0 0 10px 0;font-size:14px">Performance Matrix</h3>
             <div style="overflow-x:auto">
-              <table class="matrix-table" id="matrixTable">
-                </table>
+              <table class="matrix-table" id="matrixTable"></table>
             </div>
           </div>
         </div>
@@ -275,9 +283,14 @@
     <div class="nav-header">
       <button class="btn" onclick="closeLiveNav()">✕ Exit</button>
       <button class="btn hidden" id="btnRecenter" onclick="recenterMap()">◎ Center</button>
+      
       <div class="nav-info-box hidden" id="navInfoBox">
-        <div class="nav-dest-label">Destination</div>
+        <div class="nav-dest-label">
+          <span>Target</span>
+          <span id="gpsStatusDot" class="gps-status-dot" title="GPS Status"></span>
+        </div>
         <div class="nav-dest-val" id="navTargetName">-</div>
+        <a id="extMapBtn" href="#" target="_blank" style="font-size:10px;color:#4285F4;margin-top:2px;text-decoration:none;display:block">Open External Map ↗</a>
       </div>
     </div>
     <div id="navMapDiv"></div>
@@ -289,11 +302,16 @@
   const state = { view: 'home', subTab: 'pendingVisit', page: 1, pageSize: 50, filters: {}, tree: {}, total: 0, formUrl: '' };
 
   // --- SAFE CHART LOADING ---
-  // We check if google.charts exists before calling it to prevent the "undefined" crash.
   if (window.google && window.google.charts) {
     google.charts.load('current', {'packages':['corechart']});
   } else {
-    console.warn("Google Charts library not loaded. Dashboard charts will be disabled.");
+    console.warn("Google Charts library not loaded.");
+  }
+
+  // --- APP UTILS ---
+  function showToast(msg) {
+    const t = el('toast'); t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
   }
 
   window.addEventListener('load', () => {
@@ -345,7 +363,7 @@
         if(state.filters.feeder)el('feeder').value=state.filters.feeder;
         if(state.filters.search)el('search').value=state.filters.search;
         
-        populateDashFilters(); // NEW
+        populateDashFilters(); 
 
         el('loadingOverlay').classList.add('hidden');
         if(state.view==='dashboard')fetchDashboard(); else fetchData(true);
@@ -385,7 +403,7 @@
     const displayed = forcedOrder.filter(k=>idx[k]!==undefined);
 
     let thHtml = displayed.map(h=>`<th>${h}</th>`).join('');
-    thHtml += '<th>Action</th>'; // Always show action col
+    thHtml += '<th>Action</th>'; 
     el('thead').innerHTML = `<tr>${thHtml}</tr>`;
 
     el('tbody').innerHTML = res.rows.map(r => {
@@ -458,48 +476,81 @@
   function renderDashboard(data) {
     el('loadingOverlay').classList.add('hidden');
     
-    // SAFE GUARD: Check if visualization lib loaded before using
     if (!window.google || !window.google.visualization) {
-      el('chartDoughnut').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;font-weight:600">⚠ Charts Library Failed to Load</div>';
-      el('chartCombo').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;font-weight:600">⚠ Charts Library Failed to Load</div>';
-      // Still render table as it doesn't need external libs
+      const errHtml = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;font-weight:600">⚠ Charts Library Failed to Load</div>';
+      el('chartDoughnut').innerHTML = errHtml;
+      el('chartCombo').innerHTML = errHtml;
       const m = data.matrix;
       const genCell = (o) => `P:${o.p}<br>V:${o.v}<br>R:${o.r}`;
       el('matrixTable').innerHTML = `<thead><tr><th>Category</th><th>Today</th><th>Cumulative</th></tr></thead><tbody><tr><td style="font-weight:bold">Non Comm</td><td>${genCell(m.non.today)}</td><td>${genCell(m.non.total)}</td></tr><tr><td style="font-weight:bold">Never Comm</td><td>${genCell(m.never.today)}</td><td>${genCell(m.never.total)}</td></tr></tbody>`;
       return;
     }
 
-    // Doughnut
     const dData = google.visualization.arrayToDataTable([['Status', 'Count'],['Pending Visit', data.summary.pending],['Visit Done (Res Pending)', data.summary.visitDone],['Resolved', data.summary.resolved]]);
     const dOptions = { pieHole: 0.4, colors: ['#ef4444', '#f59e0b', '#10b981'], legend: { position: 'bottom' }, chartArea: { width: '90%', height: '80%' } };
     new google.visualization.PieChart(el('chartDoughnut')).draw(dData, dOptions);
 
-    // Combo
     const cHeader = [['Date', 'Pending', 'Visit Done', 'Resolved']];
     const cRows = data.chartData.map(d => [d.date.substring(5), d.p, d.v, d.r]);
     const cData = google.visualization.arrayToDataTable(cHeader.concat(cRows));
     const cOptions = { seriesType: 'bars', isStacked: true, colors: ['#ef4444', '#f59e0b', '#10b981'], legend: { position: 'bottom' }, chartArea: { width: '85%', height: '70%' }, hAxis: { slantedText: true, textStyle: { fontSize: 10 } } };
     new google.visualization.ComboChart(el('chartCombo')).draw(cData, cOptions);
 
-    // Matrix
     const m = data.matrix;
     const genCell = (o) => `P:${o.p}<br>V:${o.v}<br>R:${o.r}`;
     el('matrixTable').innerHTML = `<thead><tr><th>Category</th><th>Today</th><th>Cumulative</th></tr></thead><tbody><tr><td style="font-weight:bold">Non Comm</td><td>${genCell(m.non.today)}</td><td>${genCell(m.non.total)}</td></tr><tr><td style="font-weight:bold">Never Comm</td><td>${genCell(m.never.today)}</td><td>${genCell(m.never.total)}</td></tr></tbody>`;
   }
 
-  /* ================== MAP & NAV LOGIC ================== */
+  /* ================== PRODUCTION GPS & ROUTING LOGIC ================== */
   let navMap, navMarkersLayer, navRouteControl, navUserMarker, navWatchId, isUserPanning = false;
+  
+  // Throttle Config: Prevent OSRM 429 Errors
+  const ROUTING_CONFIG = {
+    minDistForUpdate: 20, // meters
+    minTimeForUpdate: 5000, // ms
+    lastUpdateLat: 0,
+    lastUpdateLng: 0,
+    lastUpdateTime: 0
+  };
+
+  // 1. Adaptive GPS Manager
+  const GPSManager = {
+    setStatus: (status) => { // 'active', 'weak', 'lost'
+      const d = el('gpsStatusDot');
+      d.className = `gps-status-dot ${status}`;
+      d.title = status === 'active' ? 'GPS Signal Strong' : (status === 'weak' ? 'GPS Signal Weak' : 'GPS Signal Lost');
+    },
+    handleError: (err) => {
+      console.warn("GPS Error:", err);
+      GPSManager.setStatus('lost');
+      if (err.code === 1) showToast("Enable GPS permissions to navigate.");
+      else if (err.code === 2) showToast("GPS signal unavailable.");
+      else if (err.code === 3) showToast("GPS signal timed out. Retrying...");
+    }
+  };
 
   function initNavMap() {
     if (!navMap) {
         navMap = L.map('navMapDiv', { zoomControl: false });
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OpenStreetMap'}).addTo(navMap);
         navMarkersLayer = L.layerGroup().addTo(navMap);
+        
+        // Prevent auto-recenter if user is interacting
         navMap.on('dragstart', () => { isUserPanning = true; el('btnRecenter').style.color='#9ca3af'; });
     }
     setTimeout(() => { navMap.invalidateSize(); }, 200);
   }
 
+  // Helper: Haversine Distance (Meters)
+  function getDistMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; 
+    const φ1 = lat1 * Math.PI/180, φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180, Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  // 2. Map View Logic (Preserves Context)
   el('btnMap').onclick = () => {
     el('btnMap').textContent='Loading...'; el('btnMap').disabled = true;
     google.script.run.withSuccessHandler(pts => { openStandardMap(pts); el('btnMap').textContent='🗺 Map'; el('btnMap').disabled = false; })
@@ -512,6 +563,10 @@
     closeLiveNav(); 
     el('viewNavigation').classList.remove('hidden');
     el('btnRecenter').classList.add('hidden');
+    
+    // UI: Hide routing-specific elements in Map View
+    el('navInfoBox').classList.add('hidden');
+    
     initNavMap();
     navMarkersLayer.clearLayers();
 
@@ -533,23 +588,29 @@
     navMap.fitBounds(bounds, {padding:[50,50]});
   }
 
+  // 3. Robust Live Navigation
   window.startFullNav = function(destLat, destLng, destLabel) {
     if (!navigator.geolocation) { alert("GPS not supported"); return; }
     
     el('viewNavigation').classList.remove('hidden');
     el('btnRecenter').classList.remove('hidden');
     
+    // UI: Set Context
     if (destLabel) {
       el('navTargetName').textContent = destLabel;
       el('navInfoBox').classList.remove('hidden');
+      el('extMapBtn').href = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}`;
     } else {
       el('navInfoBox').classList.add('hidden');
     }
 
     initNavMap();
+    
+    // Cleanup Routing controls, BUT KEEP MARKERS
     if (navRouteControl) { navMap.removeControl(navRouteControl); }
     if (navUserMarker) { navMap.removeLayer(navUserMarker); navUserMarker = null; }
     
+    // Add Destination Target (Red Circle)
     if(window.targetIndicator) navMap.removeLayer(window.targetIndicator);
     window.targetIndicator = L.circleMarker([destLat, destLng], { radius: 8, fillColor: '#ef4444', color: '#fff', weight: 2, fillOpacity: 1 }).addTo(navMap);
 
@@ -557,27 +618,60 @@
     el('btnRecenter').style.color='#333';
     const pulsingIcon = L.divIcon({ className: 'gps-puck', iconSize: [20, 20], iconAnchor: [10, 10] });
     
+    GPSManager.setStatus('weak'); // Start yellow
+    
+    // Reset Throttling
+    ROUTING_CONFIG.lastUpdateTime = 0;
+    
     navWatchId = navigator.geolocation.watchPosition(pos => {
         const lat = pos.coords.latitude, lng = pos.coords.longitude;
         const latlng = [lat, lng];
+        const now = Date.now();
 
+        // High Accuracy = Active Status
+        if(pos.coords.accuracy < 50) GPSManager.setStatus('active');
+        else GPSManager.setStatus('weak');
+
+        // Create User Marker
         if (!navUserMarker) {
             navUserMarker = L.marker(latlng, {icon: pulsingIcon, zIndexOffset: 1000}).addTo(navMap);
+            
+            // Initialize Routing Machine (Silent mode - no default markers)
             navRouteControl = L.Routing.control({
                 waypoints: [L.latLng(lat, lng), L.latLng(destLat, destLng)],
-                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                router: L.Routing.osrmv1({ 
+                    serviceUrl: 'https://router.project-osrm.org/route/v1',
+                    profile: 'driving'
+                }),
                 lineOptions: { styles: [{color: '#4285F4', opacity: 0.8, weight: 7}] },
                 createMarker: function() { return null; },
                 addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: false, show: false 
             }).addTo(navMap);
+            
+            // Handle Routing Errors (Fallback)
+            navRouteControl.on('routingerror', function() {
+                 showToast("In-app route failed. Use External Map.");
+            });
+
             const bounds = L.latLngBounds([latlng, [destLat, destLng]]);
             navMap.fitBounds(bounds, {padding: [50, 50]});
         } else {
             navUserMarker.setLatLng(latlng);
-            navRouteControl.setWaypoints([L.latLng(lat, lng), L.latLng(destLat, destLng)]);
+            
+            // THROTTLED ROUTE RECALCULATION
+            // Only update OSRM if moved > 20m AND > 5 seconds passed
+            const distMoved = getDistMeters(lat, lng, ROUTING_CONFIG.lastUpdateLat, ROUTING_CONFIG.lastUpdateLng);
+            if (distMoved > ROUTING_CONFIG.minDistForUpdate && (now - ROUTING_CONFIG.lastUpdateTime > ROUTING_CONFIG.minTimeForUpdate)) {
+                navRouteControl.setWaypoints([L.latLng(lat, lng), L.latLng(destLat, destLng)]);
+                ROUTING_CONFIG.lastUpdateLat = lat;
+                ROUTING_CONFIG.lastUpdateLng = lng;
+                ROUTING_CONFIG.lastUpdateTime = now;
+            }
         }
+        
         if (!isUserPanning) { navMap.panTo(latlng, {animate: true, easeLinearity: 0.5}); }
-    }, err => { console.warn("GPS Warn", err.message); }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+        
+    }, GPSManager.handleError, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
   }
 
   function recenterMap() {
