@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Field Visit App</title>
+  <style>
+    /* RESET & VARS */
+    :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
+    .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+    .view-section { display: none; flex-grow: 1; }
+    .view-section.active { display: block; animation: fade 0.3s ease-out; }
+    @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Header */
+    .app-header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 16px; margin: -16px -16px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+    .brand { font-size: 20px; font-weight: 800; color: var(--primary); }
+    .user-info { text-align: right; font-size: 13px; color: #5f6368; margin-right: 12px; }
+    .btn-logout { background: #fce8e6; color: var(--err); border: 1px solid #fad2cf; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    
+    /* Form */
+    .sec-title { margin: 30px 0 10px; font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
+    label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; }
+    .req { color: var(--err); }
+    input, select, textarea { width: 100%; padding: 14px; font-size: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; appearance: none; color: #000; }
+    input:focus, select:focus, textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(26,115,232,0.2); outline: none; }
+    select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
+    select:disabled { background-color: #e9ecef; color: #6c757d; }
+    textarea { resize: vertical; min-height: 80px; }
+    
+    /* Buttons */
+    .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
+    button.main { background: var(--primary); color: #fff; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    button.link { background: none; border: none; color: #5f6368; text-decoration: underline; cursor: pointer; padding: 10px; }
+    
+    /* Images */
+    .img-box { margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; display: none; background: #fff; }
+    .img-box.show { display: block; border-style: solid; border-color: var(--border); }
+    .img-box img { max-width: 100%; max-height: 250px; border-radius: 4px; }
+    
+    /* Msg */
+    .msg { text-align: center; margin-top: 15px; font-weight: 500; min-height: 20px; }
+    .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
+
+    /* Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 1000; padding: 20px; }
+    .modal-overlay.open { display: grid; }
+    .modal { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .modal h3 { margin: 0 0 10px; }
+    .modal-btns { text-align: right; margin-top: 20px; }
+    .modal-btns button { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; margin-left: 10px; }
+    .btn-ok { background: var(--primary); color: #fff; }
+    .btn-cancel { background: #f1f3f4; color: #333; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div id="view-login" class="view-section active">
+    <div style="margin: 60px 0 40px;"><h1>Welcome</h1><p style="color:#5f6368;">Log in to continue</p></div>
+    <label>Emp Code</label><input id="loginCode" type="tel" inputmode="numeric">
+    <label>Password</label><input id="loginPass" type="password">
+    <div class="actions">
+      <button class="main" id="btnLogin">LOGIN</button>
+      <button class="link" id="btnToReset">Change Password</button>
+    </div>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <div id="view-reset" class="view-section">
+    <div style="margin: 30px 0;"><h1>Reset Password</h1></div>
+    <label>Emp Code</label><input id="resetCode" type="tel">
+    <label>Old Password</label><input id="resetOld" type="password">
+    <label>New Password</label><input id="resetNew" type="password">
+    <div class="actions">
+      <button class="main" id="btnDoReset">UPDATE</button>
+      <button class="link" id="btnBackLogin">Back to Login</button>
+    </div>
+    <div id="resetMsg" class="msg"></div>
+  </div>
+
+  <div id="view-form" class="view-section">
+    <div class="app-header">
+      <div class="brand">📋 Field Visit</div>
+      <div style="display:flex;align-items:center;">
+        <div class="user-info"><div id="dispName" style="font-weight:700;color:#000;">User</div><div id="dispCode">ID</div></div>
+        <button id="btnLogout" class="btn-logout">Logout</button>
+      </div>
+    </div>
+
+    <div class="sec-title">Location</div>
+    <label>Zone <span class="req">*</span></label><select id="zone"><option value="">Select</option></select>
+    <label>Circle <span class="req">*</span></label><select id="circle" disabled><option value="">Select</option></select>
+    <label>Division <span class="req">*</span></label><select id="division" disabled><option value="">Select</option></select>
+
+    <div class="sec-title">Details</div>
+    <label>Meter No <span class="req">*</span></label><input id="meterNo" type="text" maxlength="10" placeholder="e.g. AL12345678">
+    <div style="font-size:12px;color:#666;margin-top:4px;">Format: 2 Letters (A-Z) + 7-8 Digits</div>
+
+    <div class="sec-title">Remarks</div>
+    <label>Field Remark <span class="req">*</span></label><textarea id="fieldRemark" rows="1"></textarea>
+    <label>Material Required <span class="req">*</span></label><textarea id="matReq" rows="1"></textarea>
+
+    <label>Dependency <span class="req">*</span></label><select id="dependency"><option value="">Select</option></select>
+    <label>Remark Bucket <span class="req">*</span></label><select id="remBucket" disabled><option value="">Select</option></select>
+    <label>Final Bucket <span class="req">*</span></label><select id="finBucket" disabled><option value="">Select</option></select>
+
+    <label>Rectification Status <span class="req">*</span></label><select id="rectStatus"><option value="">Select</option></select>
+    <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
+
+    <div class="sec-title">Photos</div>
+    <label>Meter Image <span class="req">*</span></label><input id="f_meter" type="file" accept="image/*" capture="environment"><div id="p_meter" class="img-box"><img id="i_meter"></div>
+    <label>With CT <span class="req">*</span></label><input id="f_ct" type="file" accept="image/*" capture="environment"><div id="p_ct" class="img-box"><img id="i_ct"></div>
+    <label>With DT & Cable <span class="req">*</span></label><input id="f_dt" type="file" accept="image/*" capture="environment"><div id="p_dt" class="img-box"><img id="i_dt"></div>
+
+    <div class="actions">
+      <button class="main" id="btnSave">SUBMIT REPORT</button>
+      <button class="link" id="btnSync">Refresh Options</button>
+      <div id="formMsg" class="msg"></div>
+    </div>
+  </div>
+</div>
+
+<div id="modal" class="modal-overlay">
+  <div class="modal">
+    <h3 id="mTitle">Title</h3><p id="mText">Text</p>
+    <div class="modal-btns">
+      <button id="mCancel" class="btn-cancel" style="display:none">Cancel</button>
+      <button id="mOk" class="btn-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // PASTE YOUR GOOGLE DEPLOYMENT URL HERE
+  const API_URL = "https://script.google.com/macros/s/AKfycbycPr0Ef3R4YRqgwT_jCTz_-3SNIwjyifXCCbzlZtwPEHiKeP9ofFRw9U1AgLiUW7wC/exec";
+
+  let currentUser = null;
+  let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
+  let mHandler = null;
+  const imgs = { meter:null, ct:null, dt:null };
+  const get = id => document.getElementById(id);
+  const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
+  const show = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); get(id).classList.add('active'); window.scrollTo(0,0); };
+
+  /** --- NEW API HANDLER --- */
+  // This replaces google.script.run
+  async function callApi(action, data = {}) {
+    try {
+      // We use POST with 'text/plain' to avoid CORS preflight complications in GAS
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: action, data: data }),
+        headers: { "Content-Type": "text/plain;charset=utf-8" } 
+      });
+      return await response.json();
+    } catch (e) {
+      console.error(e);
+      throw new Error("Connection Failed. Please check internet.");
+    }
+  }
+
+  function initAuth() {
+    const s = localStorage.getItem('fv_user');
+    if(s) { currentUser = JSON.parse(s); loadForm(); } else show('view-login');
+  }
+
+  // --- MODIFIED LOGIN ---
+  get('btnLogin').onclick = () => {
+    const c=get('loginCode').value.trim(), p=get('loginPass').value.trim();
+    if(!c||!p) return msg('loginMsg','Enter credentials','err');
+    
+    msg('loginMsg','Verifying...');
+    
+    callApi('login', { empCode: c, password: p })
+      .then(res => {
+        if(res.success) { 
+          currentUser={empCode:res.empCode, name:res.name}; 
+          localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
+          msg('loginMsg',''); 
+          loadForm(); 
+        } else {
+          msg('loginMsg', res.message, 'err');
+        }
+      })
+      .catch(e => msg('loginMsg', e.message, 'err'));
+  };
+
+  get('btnLogout').onclick = () => { localStorage.removeItem('fv_user'); currentUser=null; resetForm(); show('view-login'); };
+  get('btnToReset').onclick = () => { show('view-reset'); msg('resetMsg',''); };
+  get('btnBackLogin').onclick = () => show('view-login');
+
+  // --- MODIFIED PASSWORD RESET ---
+  get('btnDoReset').onclick = () => {
+    const c=get('resetCode').value.trim(), o=get('resetOld').value.trim(), n=get('resetNew').value.trim();
+    if(!c||!o||!n) return msg('resetMsg','All fields required','err');
+    
+    msg('resetMsg','Processing...');
+    
+    callApi('changePassword', { empCode: c, oldPass: o, newPass: n })
+      .then(res => {
+        if(res.success) { alert('Done. Login now.'); show('view-login'); } 
+        else msg('resetMsg', res.message, 'err'); 
+      })
+      .catch(e => msg('resetMsg', e.message, 'err'));
+  };
+
+  function loadForm() {
+    get('dispName').textContent = currentUser.name.split(' ')[0]; get('dispCode').textContent = currentUser.empCode;
+    show('view-form');
+  }
+
+  function populate(id, list) {
+    const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join('');
+    el.disabled = !list || !list.length;
+  }
+  
+  // --- MODIFIED FETCH OPTIONS ---
+  function fetchOpts() {
+    msg('formMsg','Syncing...');
+    
+    callApi('getOptions')
+      .then(r => {
+        circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair;
+        remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
+        populate('zone', r.zones); populate('dependency', r.dependencies);
+        populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
+        msg('formMsg','');
+      })
+      .catch(e => msg('formMsg','Sync Failed','err'));
+  }
+  get('btnSync').onclick = fetchOpts; 
+  // Only fetch if already logged in or on load? Usually safer to fetch on load but verify inside
+  fetchOpts(); 
+
+  get('zone').onchange = e => { populate('circle', circlesByZone[e.target.value]); populate('division',[]); };
+  get('circle').onchange = e => { populate('division', divisionsByPair[`${get('zone').value}||${e.target.value}`]); };
+  get('dependency').onchange = e => { populate('remBucket', remarksByDep[e.target.value]); populate('finBucket',[]); };
+  get('remBucket').onchange = e => { populate('finBucket', finalsByPair[`${get('dependency').value}||${e.target.value}`]); };
+
+  get('meterNo').oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); };
+  document.querySelectorAll('textarea').forEach(t => t.oninput = function(){this.style.height='auto';this.style.height=this.scrollHeight+'px'});
+
+  function handleImg(e, k) {
+    const f = e.target.files[0]; if(!f) { imgs[k]=null; get('p_'+k).classList.remove('show'); return; }
+    const r = new FileReader();
+    r.onload = ev => {
+      get('i_'+k).src = ev.target.result; get('p_'+k).classList.add('show');
+      const i = new Image();
+      i.onload = () => {
+        const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
+        c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+        imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
+      }; i.src = ev.target.result;
+    }; r.readAsDataURL(f);
+  }
+  get('f_meter').onchange = e => handleImg(e,'meter'); get('f_ct').onchange = e => handleImg(e,'ct'); get('f_dt').onchange = e => handleImg(e,'dt');
+
+  // --- MODIFIED SUBMISSION ---
+  get('btnSave').onclick = () => {
+    const val = id => get(id).value.trim();
+    const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), materialRequired:val('matReq'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus'), vehicleRequired:val('vehReq') };
+    
+    if(!p.zone || !p.circle || !p.meterNo || !p.dependency) return msg('formMsg','Missing fields','err');
+    if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','Missing images','err');
+    if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Error','Invalid Meter No format');
+
+    msg('formMsg','Checking duplicates...');
+
+    // 1. Check Preview
+    callApi('submitPreview', p)
+      .then(res => {
+        if(res.duplicate) modal('Duplicate', `Found. Replace?`, () => finalSub(p, res.rowIndex), true);
+        else finalSub(p);
+      })
+      .catch(e => msg('formMsg','Err: '+e.message,'err'));
+  };
+
+  function finalSub(p, idx) {
+    if(idx) p.rowIndex = idx; p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
+    msg('formMsg','Uploading...');
+    
+    // 2. Final Submit
+    callApi('submitFinal', p)
+      .then(res => {
+        msg('formMsg',''); resetForm(); modal('Success', 'Saved! Ref: '+res.meterNo);
+      })
+      .catch(e => msg('formMsg', e.message, 'err'));
+  }
+
+  function resetForm() {
+    ['meterNo','fieldRemark','matReq','f_meter','f_ct','f_dt'].forEach(id=>get(id).value='');
+    ['zone','dependency','rectStatus','vehReq'].forEach(id=>get(id).selectedIndex=0);
+    get('zone').dispatchEvent(new Event('change')); get('dependency').dispatchEvent(new Event('change'));
+    ['p_meter','p_ct','p_dt'].forEach(id=>get(id).classList.remove('show')); imgs.meter=null; imgs.ct=null; imgs.dt=null; window.scrollTo(0,0);
+  }
+
+  function modal(t, tx, okFn, cancel) {
+    get('mTitle').textContent=t; get('mText').textContent=tx; get('mCancel').style.display=cancel?'inline-block':'none';
+    mHandler = okFn; get('modal').classList.add('open');
+  }
+  get('mOk').onclick = () => { if(mHandler) mHandler(); get('modal').classList.remove('open'); };
+  get('mCancel').onclick = () => get('modal').classList.remove('open');
+
+  initAuth();
+</script>
+</body>
+</html>

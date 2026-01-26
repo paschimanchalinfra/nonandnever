@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+  <meta name="theme-color" content="#0E2A53">
+  <title>OpenCase App</title>
+  
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
+  <style>
+    /* --- CORE VARIABLES --- */
+    :root{ --brand:#0E2A53; --accent:#7BC043; --bg:#f6f8fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --border:#e5e7eb; --header-height:60px; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--text);padding-top:var(--header-height);padding-bottom:20px;height:100vh;overflow:hidden;}
+    .scroll-container { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; } 
+    .hidden { display: none !important; }
+    
+    /* Buttons */
+    .btn{background:var(--brand);color:#fff;padding:10px 16px;border-radius:10px;border:none;cursor:pointer;font-weight:600;font-size:14px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+    .btn:disabled{background:#9ca3af;cursor:not-allowed;}
+    .btn-outline{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+    .btn-nav-map{background:#4285F4;color:#fff;text-decoration:none;padding:6px 12px;border-radius:6px;display:inline-block;margin-top:6px;font-size:12px;font-weight:600;}
+
+    /* Header & Nav */
+    .app-header { position: fixed; top:0; left:0; right:0; height:var(--header-height); background: #fff; border-bottom:1px solid var(--border); display: flex; align-items: center; padding: 0 16px; z-index: 1000; justify-content: space-between; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .menu-btn { font-size: 24px; cursor: pointer; color: var(--brand); }
+    .app-title { font-size: 18px; font-weight: 800; color: var(--brand); }
+    
+    .drawer-overlay { position: fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1100; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+    .drawer-overlay.open { opacity:1; pointer-events:auto; }
+    .drawer { position: fixed; top:0; left:0; bottom:0; width:280px; background:#fff; transform:translateX(-100%); transition:transform 0.3s; z-index:1200; display:flex; flex-direction:column; }
+    .drawer.open { transform:translateX(0); }
+    .drawer-header { padding:20px; border-bottom:1px solid var(--border); background:var(--brand); color:#fff; }
+    .nav-item { padding: 14px 20px; cursor: pointer; font-weight: 600; display: flex; gap: 12px; }
+    .nav-item.active { background: #e0e7ff; color: var(--brand); border-right: 4px solid var(--brand); }
+
+    /* Layout */
+    .container{width:100%;max-width:1200px;margin:0 auto;padding:16px;}
+    .main-tabs { display:flex; gap:8px; margin-bottom:16px; background:#e5e7eb; padding:4px; border-radius:12px; }
+    .main-tab { flex:1; text-align:center; padding:10px; font-size:14px; font-weight:600; color:var(--muted); border-radius:8px; cursor:pointer; }
+    .main-tab.active { background:#fff; color:var(--brand); }
+    
+    /* Filters */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;}
+    .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+    select,input{padding:10px;border:1px solid var(--border);border-radius:8px;width:100%;}
+    .filter-actions { grid-column: 1 / -1; display:flex; gap:8px; margin-top:8px; }
+    .filter-actions .btn { flex:1; }
+
+    /* Table */
+    .list-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .data-list { display: grid; gap: 12px; }
+    
+    @media (max-width: 768px) {
+      .desktop-table { display: none; }
+      .mobile-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 6px; position: relative; }
+      .m-card-header { display:flex; justify-content:space-between; border-bottom:1px solid #f3f4f6; padding-bottom:8px; margin-bottom:4px; }
+      .m-meter { font-weight:700; color:var(--brand); }
+      .m-status { font-size:12px; background:#f3f4f6; padding:2px 8px; border-radius:99px; }
+      .m-row { display:flex; justify-content:space-between; font-size:13px; }
+      .m-label { color:var(--muted); }
+      .m-val { font-weight:500; text-align:right; }
+      .m-footer { margin-top:6px; padding-top:8px; border-top:1px dashed var(--border); display:flex; gap:8px; justify-content:flex-end; }
+    }
+    @media (min-width: 769px) {
+      .mobile-only { display: none; }
+      .table-container { overflow-x:auto; }
+      table { width:100%; border-collapse: collapse; }
+      th { background:#f9fafb; text-align:left; padding:12px; font-size:13px; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+      td { padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; }
+    }
+
+    .pager{display:flex;gap:12px;justify-content:center;margin-top:20px;align-items:center;padding-bottom:40px;}
+    .link{color:var(--brand);cursor:pointer;font-weight:600;padding:8px 16px; background:#e0e7ff; border-radius:8px;}
+
+    /* Dashboard */
+    .dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+    .dash-panel{border-radius:12px;border:1px solid var(--border);padding:16px;background:#fff;display:flex;flex-direction:column}
+    .universal-panel { grid-column: span 2; min-height: 400px; }
+    @media(max-width:900px){ .universal-panel { grid-column: span 1; } }
+    .metrics{display:flex;flex-direction:column;gap:8px;}
+    .metric-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;}
+    .metric-val{font-weight:700;color:var(--brand);}
+
+    /* Loading */
+    #loadingOverlay { position: fixed; inset:0; background: rgba(255,255,255,0.9); z-index: 2000; display: flex; flex-direction:column; justify-content: center; align-items: center; backdrop-filter: blur(2px); transition:opacity 0.2s; }
+    .spinner { width:40px;height:40px;border:4px solid #e5e7eb;border-top-color:var(--brand);border-radius:50%;animation:spin 0.8s linear infinite; margin-bottom:12px;}
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-msg { color: #dc2626; font-weight: 600; text-align: center; max-width: 300px; }
+    .error-details { color: #6b7280; font-size: 11px; margin-top: 8px; max-width: 300px; word-break: break-all; }
+    
+    /* FORM VIEW OVERLAY (IFRAME) */
+    #viewForm { position: fixed; inset: 0; top: var(--header-height); background: #fff; z-index: 1050; display: flex; flex-direction: column; }
+    #viewForm.hidden { display: none !important; }
+    .form-header { padding: 10px 16px; border-bottom: 1px solid var(--border); background: #f9fafb; display: flex; align-items: center; gap: 12px; }
+    .form-frame-container { flex: 1; width: 100%; height: 100%; overflow: hidden; background: #fff; }
+    iframe { width: 100%; height: 100%; border: none; }
+
+    /* UNIFIED MAP & NAVIGATION VIEW */
+    #viewNavigation { position: fixed; inset: 0; top: 0; background: #fff; z-index: 2000; display: flex; flex-direction: column; }
+    .nav-header { position: absolute; top: 16px; left: 16px; right: 16px; z-index: 999; display: flex; gap: 10px; pointer-events: none; }
+    .nav-header > button { pointer-events: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #fff; color: #333; border: none; font-weight: 700; }
+    #navMapDiv { flex: 1; width: 100%; height: 100%; background: #e5e7eb; }
+
+    /* GPS PULSING MARKER */
+    .gps-puck { width: 18px; height: 18px; background: #4285F4; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 6px rgba(0,0,0,0.4); position: relative; }
+    .gps-puck::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; border-radius: 50%; background: rgba(66, 133, 244, 0.4); animation: pulse 2s infinite; z-index: -1; }
+    @keyframes pulse { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(-50%, -50%) scale(2); opacity: 0; } }
+    .leaflet-routing-container { display: none !important; }
+    .btn-live-route { background: #fff; color: #4285F4; border: 1px solid #4285F4; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  </style>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbx5W8xXL51bu-0PqM0KBcztUMixZtoNARjVn8hefHbPZi-wvT4iPyX6dWAR1JgWA7TQXw/exec"; 
+
+    if (typeof google === 'undefined' || !google.script) {
+      window.google = { script: { run: { withSuccessHandler: function(onSuccess) { return { withFailureHandler: function(onFailure) { return new Proxy({}, { get: function(target, prop) { return function(payload) { fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: prop, payload: payload }) }).then(r => { if(!r.ok) throw new Error(`Server Error: ${r.status}`); return r.text(); }).then(text => { try { const data = JSON.parse(text); if(data && data.error) { if(onFailure) onFailure(new Error(data.error)); } else { onSuccess(data); } } catch(e) { if(text.includes("<html")) throw new Error("PERMISSION ERROR: Redeploy Script as 'Anyone'."); throw new Error("INVALID RESPONSE"); } }).catch(err => { if(onFailure) onFailure(err); }); }; } }); } }; } } } };
+    }
+  </script>
+</head>
+<body>
+
+  <div id="loadingOverlay">
+    <div class="spinner" id="spinner"></div>
+    <div style="font-weight:600;color:var(--brand)" id="loadingText">Starting App...</div>
+    <div id="errorDetails" class="error-details"></div>
+  </div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header"><div class="drawer-title" style="font-weight:800;font-size:20px">OpenCase</div></div>
+    <div class="nav-links">
+      <div class="nav-item active" onclick="navTo('home')"><i>🏠</i> Home / List</div>
+      <div class="nav-item" onclick="navTo('dashboard')"><i>bar_chart</i> Dashboard</div>
+    </div>
+  </div>
+
+  <header class="app-header">
+    <div class="header-left">
+      <div class="menu-btn" id="menuBtn">☰</div>
+      <div class="app-title" id="pageTitle">Cases</div>
+    </div>
+  </header>
+
+  <div class="scroll-container" id="mainContent">
+    <div class="container">
+      <div id="viewHome">
+        <div class="main-tabs">
+          <div id="tabPending" class="main-tab active" onclick="switchSubTab('pendingVisit')">Pending for Visit</div>
+          <div id="tabResolved" class="main-tab" onclick="switchSubTab('visitPendingResolution')">Visit completed; resolution pending</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">
+            <div style="font-weight:700;color:var(--brand)">Filters</div>
+            <div style="font-size:12px;color:var(--brand);cursor:pointer" id="toggleFilters">Show/Hide</div>
+          </div>
+          <div class="filters" id="filterContainer">
+            <div class="field"><label>Category</label><select id="nonCommFilter"><option value="">All</option></select></div>
+            <div class="field"><label>SAT Status</label><select id="satFilter"><option value="">All</option></select></div>
+            <div class="field"><label>Zone</label><select id="zone"></select></div>
+            <div class="field"><label>Circle</label><select id="circle"></select></div>
+            <div class="field"><label>Division</label><select id="division"></select></div>
+            <div class="field"><label>Subdivision</label><select id="subdivision"></select></div>
+            <div class="field"><label>Substation</label><select id="substation"></select></div>
+            <div class="field"><label>Feeder</label><select id="feeder"></select></div>
+            <div class="field"><label>Search</label><input id="search" placeholder="Meter/Name..."></div>
+            <div class="filter-actions">
+              <button id="btnApply" class="btn">Apply Filters</button>
+              <button id="btnClear" class="btn btn-outline">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="list-header">
+          <div><span class="list-title" id="countDisplay">0 cases</span></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" style="padding:8px" id="btnMap">🗺 Map</button>
+            <button class="btn btn-outline" style="padding:8px" id="btnCsv">⬇ CSV</button>
+          </div>
+        </div>
+
+        <div id="tableLoader" class="hidden" style="text-align:center;padding:20px;color:var(--muted)">Loading data...</div>
+        
+        <div class="table-container desktop-table">
+          <table><thead id="thead"></thead><tbody id="tbody"></tbody></table>
+        </div>
+
+        <div class="data-list mobile-only" id="mobileList"></div>
+
+        <div class="pager">
+          <div id="prev" class="link">Previous</div>
+          <span id="pageInfo" style="font-size:13px;color:var(--muted)">-</span>
+          <div id="next" class="link">Next</div>
+        </div>
+      </div>
+
+      <div id="viewDashboard" class="hidden">
+        <div class="dash-grid">
+          <div class="dash-panel">
+            <h3>Overall Status</h3>
+            <div class="metrics">
+              <div class="metric-line"><span>Total Cases</span><span class="metric-val" id="mTotal">0</span></div>
+              <div class="metric-line"><span>Pending Visit</span><span class="metric-val" id="mPendingVisit">0</span></div>
+              <div class="metric-line"><span>Visit Done</span><span class="metric-val" id="mVisitPending">0</span></div>
+              <div class="metric-line"><span>Resolved</span><span class="metric-val" id="mResolved">0</span></div>
+              <hr>
+              <div class="metric-line"><span>Non Comm</span><span class="metric-val" id="mNonComm">0</span></div>
+              <div class="metric-line"><span>Never Comm</span><span class="metric-val" id="mNeverComm">0</span></div>
+            </div>
+          </div>
+          <div class="dash-panel">
+            <h3>Status Breakdown</h3>
+            <div id="chartVisitStatus" style="height:250px"></div>
+          </div>
+          <div class="dash-panel universal-panel">
+            <h3>Universal Analysis</h3>
+            <div style="margin-bottom:10px">
+              <select id="chartGroupBy" style="width:auto;padding:6px">
+                <option value="z">Zone</option><option value="c">Circle</option><option value="d">Division</option><option value="ct">Contractor</option>
+              </select>
+            </div>
+            <div id="universalChart" style="width:100%;height:320px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewForm" class="hidden">
+    <div class="form-header">
+      <button class="btn btn-outline" style="padding:6px 12px;" onclick="closeForm()">← Back to List</button>
+      <div style="font-weight:700;color:var(--brand)">Case Form</div>
+    </div>
+    <div class="form-frame-container">
+      <iframe id="formFrame" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <div id="viewNavigation" class="hidden">
+    <div class="nav-header">
+      <button class="btn" onclick="closeLiveNav()">✕ Exit</button>
+      <button class="btn hidden" id="btnRecenter" onclick="recenterMap()">◎ Center</button>
+    </div>
+    <div id="navMapDiv"></div>
+  </div>
+
+<script>
+  const el = id => document.getElementById(id);
+  const STORAGE_KEY = 'opencase_v2_pref';
+  const state = { view: 'home', subTab: 'pendingVisit', page: 1, pageSize: 50, filters: {}, tree: {}, total: 0, formUrl: '' };
+
+  window.addEventListener('load', () => {
+    loadState(); setupDrawer(); loadFilters(); loadFormConfig();
+  });
+
+  function showError(msg, details) {
+    el('spinner').classList.add('hidden');
+    el('loadingText').textContent = msg;
+    el('loadingText').classList.add('error-msg');
+    if(details) { el('errorDetails').textContent = details; el('errorDetails').classList.remove('hidden'); }
+  }
+
+  function loadState() {
+    try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY)); if(s) { 
+      if(s.view)state.view=s.view==='dashboard'?'dashboard':'home'; 
+      if(s.subTab)state.subTab=s.subTab; 
+      if(s.filters)state.filters=s.filters; 
+    } } catch(e){}
+  }
+  function saveState() {
+    const s = { view:state.view, subTab:state.subTab, filters:{ 
+      zone:el('zone').value, circle:el('circle').value, division:el('division').value, 
+      subdivision:el('subdivision').value, substation:el('substation').value, feeder:el('feeder').value, search:el('search').value,
+      nonComm:el('nonCommFilter').value, sat:el('satFilter').value
+    } };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  }
+
+  function loadFormConfig() { google.script.run.withSuccessHandler(res => { state.formUrl = res.visitFormUrl; }).withFailureHandler(e=>console.log(e)).getFormConfiguration(); }
+  
+  function openForm(url) {
+    if(!url) return;
+    let embedUrl = url;
+    if(url.includes('viewform') && !url.includes('embedded=true')) {
+        embedUrl += (url.includes('?') ? '&' : '?') + 'embedded=true';
+    }
+    el('formFrame').src = embedUrl;
+    el('viewForm').classList.remove('hidden');
+  }
+
+  function closeForm() {
+    el('viewForm').classList.add('hidden');
+    el('formFrame').src = "about:blank"; 
+  }
+
+  function setupDrawer() {
+    const d=el('drawer'), ov=el('drawerOverlay');
+    el('menuBtn').onclick=()=>{d.classList.add('open');ov.classList.add('open');}; ov.onclick=()=>{d.classList.remove('open');ov.classList.remove('open');};
+    updateNavUI(); updateTabsUI();
+  }
+  function navTo(v) { 
+    if(v === 'home' && !el('viewForm').classList.contains('hidden')) { closeForm(); } 
+    state.view=v; updateNavUI(); el('drawer').classList.remove('open'); el('drawerOverlay').classList.remove('open'); saveState(); if(v==='dashboard')fetchDashboard(); else fetchData(true); 
+  }
+  function updateNavUI() {
+    el('viewHome').classList.add('hidden'); el('viewDashboard').classList.add('hidden');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    if(state.view==='dashboard'){ el('viewDashboard').classList.remove('hidden'); el('pageTitle').textContent='Dashboard'; document.querySelectorAll('.nav-item')[1].classList.add('active'); }
+    else { el('viewHome').classList.remove('hidden'); el('pageTitle').textContent='Cases List'; document.querySelectorAll('.nav-item')[0].classList.add('active'); }
+  }
+  function switchSubTab(t) { state.subTab=t; updateTabsUI(); saveState(); fetchData(true); }
+  function updateTabsUI() { el('tabPending').classList.toggle('active', state.subTab==='pendingVisit'); el('tabResolved').classList.toggle('active', state.subTab!=='pendingVisit'); }
+
+  function loadFilters(){
+    google.script.run.withSuccessHandler(res => {
+        state.tree=res.tree; state.zones=res.zones; state.subMap=res.subdivisionsMap; state.substMap=res.substationsMap; state.feedMap=res.feedersMap;
+        setOptions(el('nonCommFilter'), res.nonCommOptions);
+        setOptions(el('satFilter'), res.satOptions);
+        if(state.filters.nonComm) el('nonCommFilter').value=state.filters.nonComm;
+        if(state.filters.sat) el('satFilter').value=state.filters.sat;
+        setOptions(el('zone'), state.zones);
+        if(state.filters.zone)el('zone').value=state.filters.zone; updateCircles();
+        if(state.filters.circle)el('circle').value=state.filters.circle; updateDivisions();
+        if(state.filters.division)el('division').value=state.filters.division; updateSubLevels();
+        if(state.filters.subdivision)el('subdivision').value=state.filters.subdivision; updateSubLevels();
+        if(state.filters.substation)el('substation').value=state.filters.substation; updateSubLevels();
+        if(state.filters.feeder)el('feeder').value=state.filters.feeder;
+        if(state.filters.search)el('search').value=state.filters.search;
+        el('loadingOverlay').classList.add('hidden'); // CRITICAL RESTORATION
+        if(state.view==='dashboard')fetchDashboard(); else fetchData(true);
+      })
+      .withFailureHandler(err => showError("Connection Failed", err.message))
+      .getFilterTree();
+  }
+  const setOptions = (sel, arr) => { const prev=sel.value; sel.innerHTML=`<option value="">All</option>`+(arr||[]).map(v=>`<option>${v}</option>`).join(''); if([...sel.options].some(o=>o.value===prev))sel.value=prev; }
+  
+  function updateCircles(){ const z=(el('zone').value||'').trim(); const circles=(z&&state.tree[z])?Object.keys(state.tree[z]).sort():[]; setOptions(el('circle'),circles); if(circles.length===1)el('circle').value=circles[0]; else if(!circles.includes(el('circle').value))el('circle').value=''; updateDivisions(); }
+  function updateDivisions(){ const z=el('zone').value, c=el('circle').value; const divs=(z&&c&&state.tree[z][c])?state.tree[z][c]:[]; setOptions(el('division'),divs); if(divs.length===1)el('division').value=divs[0]; else if(!divs.includes(el('division').value))el('division').value=''; updateSubLevels(); }
+  function updateSubLevels(){ const z=el('zone').value, c=el('circle').value, d=el('division').value; const sKey=[z,c,d].join('||'); setOptions(el('subdivision'),state.subMap[sKey]||[]); const subd=el('subdivision').value; const stKey=[z,c,d,subd].join('||'); setOptions(el('substation'),state.substMap[stKey]||[]); const subst=el('substation').value; const fKey=[z,c,d,subd,subst].join('||'); setOptions(el('feeder'),state.feedMap[fKey]||[]); }
+
+  ['zone','circle','division','subdivision','substation','feeder','nonCommFilter','satFilter'].forEach(id=>el(id).onchange = () => { if(id==='zone')updateCircles(); else if(id==='circle')updateDivisions(); else if(id!=='nonCommFilter'&&id!=='satFilter') updateSubLevels(); saveState(); });
+
+  el('btnApply').onclick = () => { state.page=1; saveState(); if(state.view==='dashboard')fetchDashboard(); else fetchData(true); };
+  el('btnClear').onclick = () => { ['zone','circle','division','subdivision','substation','feeder','search','nonCommFilter','satFilter'].forEach(id=>el(id).value=''); updateCircles(); state.filters={}; saveState(); el('btnApply').click(); };
+  el('toggleFilters').onclick = () => el('filterContainer').classList.toggle('hidden');
+  
+  function buildPayload() { 
+    return { 
+      zone:el('zone').value, circle:el('circle').value, division:el('division').value, 
+      subdivision:el('subdivision').value, substation:el('substation').value, feeder:el('feeder').value, search:el('search').value, 
+      nonComm:el('nonCommFilter').value, sat:el('satFilter').value,
+      page:state.page, pageSize:state.pageSize, visitMode:state.subTab 
+    }; 
+  }
+
+  function fetchData(reset) {
+    if(reset) state.page=1; el('tableLoader').classList.remove('hidden'); el('tbody').innerHTML=''; el('mobileList').innerHTML='';
+    google.script.run.withSuccessHandler(res => { renderData(res); el('tableLoader').classList.add('hidden'); })
+    .withFailureHandler(err => { el('tableLoader').innerHTML=`<span style="color:red">Error: ${err.message}</span>`; })
+    .getVisitCases(buildPayload());
+  }
+
+  const forcedOrder = ["New_Meter","Non_Never_Comm","Zone","Circle","Division","Subdivision","Substation Name","Feeder Name","DT Name","Contractor_Name","Latitude","Longitude","MI_Date","SAT/NON-SAT","Pre-Paid Proposed","Visit Date","Visit Done by","Field Visit Remarks","Material Required","Resolved Status"];
+
+  function renderData(res) {
+    state.total = res.total; el('countDisplay').textContent = `${res.total} Cases`;
+    el('pageInfo').textContent = `${Math.min(res.total, (res.page-1)*res.pageSize+1)} - ${Math.min(res.total, res.page*res.pageSize)}`;
+    if(!res.rows.length) { el('mobileList').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">No records found.</div>'; return; }
+
+    const idx = Object.fromEntries(res.headers.map((h,i)=>[h,i]));
+    const displayed = forcedOrder.filter(k=>idx[k]!==undefined);
+
+    let thHtml = displayed.map(h=>`<th>${h}</th>`).join('');
+    thHtml += '<th>Action</th>';
+    el('thead').innerHTML = `<tr>${thHtml}</tr>`;
+
+    el('tbody').innerHTML = res.rows.map(r => {
+      let trHtml = displayed.map(k=>`<td>${r[idx[k]]||''}</td>`).join('');
+      const lat = r[idx['Latitude']], lng = r[idx['Longitude']];
+      const hasGps = (lat && lng && lat!='-' && lat!=0);
+      let btns = `<div style="display:flex;gap:4px">`;
+      if(state.formUrl) btns += `<button onclick="openForm('${state.formUrl}')" class="btn btn-outline btn-sm">Fill Form</button>`;
+      if(hasGps) btns += `<button onclick="startFullNav(${lat}, ${lng})" class="btn btn-outline btn-sm" style="color:#4285F4;border-color:#4285F4">Live Route</button>`;
+      btns += `</div>`;
+      return `<tr>${trHtml}<td>${btns}</td></tr>`;
+    }).join('');
+
+    el('mobileList').innerHTML = res.rows.map(r => {
+      const get = k => r[idx[k]]||'-';
+      const lat = get('Latitude'), lng = get('Longitude');
+      const hasGps = (lat && lng && lat!='-' && lat!=0);
+      let actionBtns = '';
+      if(state.formUrl) actionBtns += `<button onclick="openForm('${state.formUrl}')" class="btn btn-outline btn-sm">Fill Form</button>`;
+      if(hasGps) actionBtns += `<button onclick="startFullNav(${lat}, ${lng})" class="btn btn-outline btn-sm" style="color:#4285F4;border-color:#4285F4">Live Route</button>`;
+
+      let extra = '';
+      if(state.subTab !== 'pendingVisit') {
+        extra = `<div style="background:#f9fafb;padding:8px;border-radius:6px;margin-top:4px;">
+          <div class="m-row"><span class="m-label">Visit Date:</span><span class="m-val">${get('Visit Date')}</span></div>
+          <div class="m-row"><span class="m-label">By:</span><span class="m-val">${get('Visit Done by')}</span></div>
+          <div class="m-row"><span class="m-label">Status:</span><span class="m-val" style="color:var(--brand);font-weight:700">${get('Resolved Status')}</span></div>
+        </div>`;
+      }
+
+      return `<div class="mobile-card">
+        <div class="m-card-header"><div class="m-meter">${get('New_Meter')}</div><div class="m-status">${get('Non_Never_Comm')}</div></div>
+        <div class="m-row"><span class="m-label">Zone/Cir</span><span class="m-val">${get('Zone')} / ${get('Circle')}</span></div>
+        <div class="m-row"><span class="m-label">Div/Sub</span><span class="m-val">${get('Division')} / ${get('Subdivision')}</span></div>
+        <div class="m-row"><span class="m-label">Substation</span><span class="m-val">${get('Substation Name')}</span></div>
+        <div class="m-row"><span class="m-label">DT Name</span><span class="m-val">${get('DT Name')}</span></div>
+        ${extra}
+        <div class="m-footer" style="justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+           <div style="font-size:11px;color:var(--muted);width:100%">${get('Contractor_Name')}</div>
+           <div style="display:flex;gap:8px;width:100%;justify-content:flex-end">${actionBtns}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  el('prev').onclick = () => { if(state.page > 1) { state.page--; fetchData(false); } };
+  el('next').onclick = () => { if(state.page*state.pageSize < state.total) { state.page++; fetchData(false); } };
+
+  // --- UNIFIED FULL SCREEN MAP LOGIC ---
+  let map, grp, rt, usrMk, watch;
+  let isPan = false;
+
+  el('btnMap').onclick = () => {
+    el('btnMap').textContent='Loading...'; el('btnMap').disabled = true;
+    google.script.run.withSuccessHandler(pts => { openStandardMap(pts); el('btnMap').textContent='🗺 Map'; el('btnMap').disabled = false; })
+    .withFailureHandler(err => { alert("Map Error: " + err.message); el('btnMap').textContent='🗺 Map'; el('btnMap').disabled = false; })
+    .getMapData(buildPayload());
+  };
+
+  function initMap() {
+    if(!map) {
+       map = L.map('navMapDiv', { zoomControl: false });
+       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: '© OpenStreetMap'}).addTo(map);
+       grp = L.layerGroup().addTo(map);
+       map.on('dragstart', () => { isPan = true; el('btnRecenter').classList.remove('hidden'); el('btnRecenter').style.opacity = '0.5'; });
+    }
+    setTimeout(() => map.invalidateSize(), 300);
+  }
+
+  function openStandardMap(points) {
+    closeLiveNav(); 
+    el('viewNavigation').classList.remove('hidden');
+    el('btnRecenter').classList.add('hidden'); 
+    initMap();
+    grp.clearLayers();
+
+    const bounds = L.latLngBounds();
+    points.forEach(p => {
+      let det = '';
+      if(state.subTab === 'pendingVisit') {
+         det = `<b>Zone:</b> ${p.z}<br><b>Circle:</b> ${p.c}<br><b>Division:</b> ${p.d}<br><b>Subdivision:</b> ${p.sd}<br><b>Substation:</b> ${p.sub}<br><b>DT:</b> ${p.dt}<br><b>Contr:</b> ${p.ct}`;
+      } else {
+         det = `<b>Zone:</b> ${p.z}<br><b>Subst:</b> ${p.sub}<br><b>Contr:</b> ${p.ct}<hr style="margin:4px 0;border-top:1px solid #eee"><b>Date:</b> ${p.vd}<br><b>By:</b> ${p.vdb}<br><b>Status:</b> ${p.st}<br><div style="margin-top:4px;background:#f3f4f6;padding:4px;border-radius:4px"><i>"${p.rmk}"</i></div>`;
+      }
+      
+      let btns = `<div style="display:flex;gap:4px;margin-top:8px;border-top:1px solid #eee;padding-top:8px">`;
+      if(state.formUrl) btns += `<button onclick="openForm('${state.formUrl}')" class="btn-live-route" style="border-color:var(--accent);color:var(--accent)">Form</button>`;
+      btns += `<button onclick="startFullNav(${p.lat}, ${p.lng})" class="btn-live-route">📍 Route</button>`;
+      btns += `</div>`;
+      
+      const popup = `<div style="font-size:13px;min-width:220px;line-height:1.4"><div style="margin-bottom:4px"><b style="color:var(--brand);font-size:14px">${p.nm}</b> <span style="font-size:11px;color:#666">(${p.nnc})</span></div>${det}${btns}</div>`;
+      L.marker([p.lat, p.lng]).addTo(grp).bindPopup(popup);
+      bounds.extend([p.lat, p.lng]);
+    });
+    map.fitBounds(bounds, {padding:[50,50]});
+  }
+
+  window.startFullNav = function(destLat, destLng) {
+    if (!navigator.geolocation) { alert("GPS not supported"); return; }
+    closeLiveNav();
+    el('viewNavigation').classList.remove('hidden');
+    el('btnRecenter').classList.remove('hidden');
+    el('btnRecenter').style.opacity = '1';
+    
+    initMap();
+    grp.clearLayers();
+    L.marker([destLat, destLng]).addTo(grp).bindPopup(`<b>Destination</b>`).openPopup();
+
+    isPan = false;
+    const icon = L.divIcon({ className: 'gps-puck', iconSize: [20, 20], iconAnchor: [10, 10] });
+    
+    watch = navigator.geolocation.watchPosition(pos => {
+        const uLat = pos.coords.latitude, uLng = pos.coords.longitude;
+        if (!usrMk) {
+            usrMk = L.marker([uLat, uLng], {icon: icon, zIndexOffset: 1000}).addTo(map);
+            rt = L.Routing.control({
+                waypoints: [L.latLng(uLat, uLng), L.latLng(destLat, destLng)],
+                router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+                lineOptions: { styles: [{color: '#4285F4', opacity: 0.8, weight: 6}] },
+                createMarker: () => null, show: false
+            }).addTo(map);
+            rt.on('routesfound', e => map.fitBounds(e.routes[0].coordinates, {padding: [50, 50], animate: true}));
+        } else {
+            usrMk.setLatLng([uLat, uLng]);
+        }
+        if (!isPan) map.panTo([uLat, uLng], {animate: true});
+    }, err => console.warn(err), { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+  }
+
+  window.recenterMap = () => {
+    isPan = false;
+    el('btnRecenter').style.opacity = '1';
+    if(usrMk) map.panTo(usrMk.getLatLng(), {animate: true});
+  };
+
+  function closeLiveNav() {
+    if(watch) navigator.geolocation.clearWatch(watch);
+    if(rt) map.removeControl(rt);
+    if(usrMk) map.removeLayer(usrMk);
+    watch = null; rt = null; usrMk = null;
+    el('viewNavigation').classList.add('hidden');
+  }
+
+  el('btnCsv').onclick = () => {
+      el('btnCsv').textContent='Exporting...'; el('btnCsv').disabled = true;
+      const m = state.view==='dashboard'?'exportCsv':'exportVisitCsv';
+      google.script.run.withSuccessHandler(res => {
+        const csvContent = res.csv || res; 
+        const blob = new Blob([csvContent], {type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `OpenCase_Export.csv`; a.click();
+        el('btnCsv').textContent='⬇ CSV'; el('btnCsv').disabled = false;
+      })
+      .withFailureHandler(err => { alert("Export Failed: " + err.message); el('btnCsv').textContent='⬇ CSV'; el('btnCsv').disabled = false; })[m](buildPayload());
+  };
+</script>
+</body>
+</html>
