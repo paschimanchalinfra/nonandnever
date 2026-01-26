@@ -288,7 +288,13 @@
   const STORAGE_KEY = 'opencase_v2_pref';
   const state = { view: 'home', subTab: 'pendingVisit', page: 1, pageSize: 50, filters: {}, tree: {}, total: 0, formUrl: '' };
 
-  google.charts.load('current', {'packages':['corechart']});
+  // --- SAFE CHART LOADING ---
+  // We check if google.charts exists before calling it to prevent the "undefined" crash.
+  if (window.google && window.google.charts) {
+    google.charts.load('current', {'packages':['corechart']});
+  } else {
+    console.warn("Google Charts library not loaded. Dashboard charts will be disabled.");
+  }
 
   window.addEventListener('load', () => {
     loadState(); setupDrawer(); loadFilters(); loadFormConfig();
@@ -452,6 +458,17 @@
   function renderDashboard(data) {
     el('loadingOverlay').classList.add('hidden');
     
+    // SAFE GUARD: Check if visualization lib loaded before using
+    if (!window.google || !window.google.visualization) {
+      el('chartDoughnut').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;font-weight:600">⚠ Charts Library Failed to Load</div>';
+      el('chartCombo').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:red;font-size:12px;font-weight:600">⚠ Charts Library Failed to Load</div>';
+      // Still render table as it doesn't need external libs
+      const m = data.matrix;
+      const genCell = (o) => `P:${o.p}<br>V:${o.v}<br>R:${o.r}`;
+      el('matrixTable').innerHTML = `<thead><tr><th>Category</th><th>Today</th><th>Cumulative</th></tr></thead><tbody><tr><td style="font-weight:bold">Non Comm</td><td>${genCell(m.non.today)}</td><td>${genCell(m.non.total)}</td></tr><tr><td style="font-weight:bold">Never Comm</td><td>${genCell(m.never.today)}</td><td>${genCell(m.never.total)}</td></tr></tbody>`;
+      return;
+    }
+
     // Doughnut
     const dData = google.visualization.arrayToDataTable([['Status', 'Count'],['Pending Visit', data.summary.pending],['Visit Done (Res Pending)', data.summary.visitDone],['Resolved', data.summary.resolved]]);
     const dOptions = { pieHole: 0.4, colors: ['#ef4444', '#f59e0b', '#10b981'], legend: { position: 'bottom' }, chartArea: { width: '90%', height: '80%' } };
