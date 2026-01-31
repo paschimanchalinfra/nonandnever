@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Field Visit App</title>
   <style>
-    /* RESET & VARS */
+    /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* View Switching */
     .view-section { display: none; flex-grow: 1; }
     .view-section.active { display: block; animation: fade 0.3s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -20,7 +22,7 @@
     .user-info { text-align: right; font-size: 13px; color: #5f6368; margin-right: 12px; }
     .btn-logout { background: #fce8e6; color: var(--err); border: 1px solid #fad2cf; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
     
-    /* Form */
+    /* Inputs */
     .sec-title { margin: 30px 0 10px; font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
     label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; }
     .req { color: var(--err); }
@@ -45,7 +47,7 @@
     .img-box.show { display: block; border-style: solid; border-color: var(--border); }
     .img-box img { max-width: 100%; max-height: 250px; border-radius: 4px; }
     
-    /* Msg & Modal */
+    /* Messaging */
     .msg { text-align: center; margin-top: 15px; font-weight: 500; min-height: 20px; }
     .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 1000; padding: 20px; }
@@ -62,12 +64,16 @@
 <div class="container">
   <div id="view-login" class="view-section active">
     <div style="margin: 60px 0 40px;"><h1>Welcome</h1><p style="color:#5f6368;">Log in to continue</p></div>
-    <label>Emp Code</label><input id="loginCode" type="text" placeholder="Enter ID (e.g. INTL123)">
+    
+    <label>Emp Code</label>
+    <input id="loginCode" type="text" placeholder="Enter ID (e.g. INTL123)">
+    
     <label>Password</label>
     <div class="pass-wrap">
       <input id="loginPass" type="password">
       <span id="togglePass" class="pass-toggle">👁️</span>
     </div>
+    
     <div class="actions">
       <button class="main" id="btnLogin">LOGIN</button>
       <button class="link" id="btnToReset">Change Password</button>
@@ -138,7 +144,7 @@
 
 <script>
   // -------------------------------------------------------------
-  // REPLACE THIS URL WITH YOUR NEW WEB APP URL
+  // IMPORTANT: PASTE YOUR GOOGLE DEPLOYMENT URL HERE
   const API_URL = "https://script.google.com/macros/s/AKfycbycPr0Ef3R4YRqgwT_jCTz_-3SNIwjyifXCCbzlZtwPEHiKeP9ofFRw9U1AgLiUW7wC/exec"; 
   // -------------------------------------------------------------
 
@@ -149,6 +155,7 @@
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
   const show = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); get(id).classList.add('active'); window.scrollTo(0,0); };
 
+  /** --- API HANDLER --- */
   async function callApi(action, data = {}) {
     try {
       const response = await fetch(API_URL, {
@@ -158,6 +165,7 @@
       });
       return await response.json();
     } catch (e) {
+      console.error(e);
       throw new Error("Internet Connection Failed");
     }
   }
@@ -167,20 +175,27 @@
     if(s) { currentUser = JSON.parse(s); loadForm(); } else show('view-login');
   }
 
-  // PASS TOGGLE
+  // --- 1. PASSWORD TOGGLE ---
   get('togglePass').onclick = () => {
     const ip=get('loginPass'), ico=get('togglePass');
     if(ip.type==='password'){ ip.type='text'; ico.textContent='🙈'; } else { ip.type='password'; ico.textContent='👁️'; }
   };
 
-  // LOGIN
+  // --- 2. LOGIN ---
   get('btnLogin').onclick = () => {
     const c=get('loginCode').value.trim(), p=get('loginPass').value.trim();
     if(!c||!p) return msg('loginMsg','Enter credentials','err');
+    
     msg('loginMsg','Verifying...');
     callApi('login', { empCode: c, password: p }).then(res => {
-      if(res.success) { currentUser={empCode:res.empCode, name:res.name}; localStorage.setItem('fv_user',JSON.stringify(currentUser)); msg('loginMsg',''); loadForm(); }
-      else msg('loginMsg', res.message, 'err');
+      if(res.success) { 
+        currentUser={empCode:res.empCode, name:res.name}; 
+        localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
+        msg('loginMsg',''); 
+        loadForm(); 
+      } else {
+        msg('loginMsg', res.message, 'err');
+      }
     }).catch(e => msg('loginMsg', e.message, 'err'));
   };
 
@@ -188,23 +203,26 @@
   get('btnToReset').onclick = () => { show('view-reset'); msg('resetMsg',''); };
   get('btnBackLogin').onclick = () => show('view-login');
 
-  // RESET
+  // --- 3. RESET PASSWORD ---
   get('btnDoReset').onclick = () => {
     const c=get('resetCode').value.trim(), o=get('resetOld').value.trim(), n=get('resetNew').value.trim();
     if(!c||!o||!n) return msg('resetMsg','All fields required','err');
+    
     msg('resetMsg','Processing...');
     callApi('changePassword', { empCode: c, oldPass: o, newPass: n }).then(res => {
-      if(res.success) { alert('Password Changed. Please Login.'); show('view-login'); } else msg('resetMsg', res.message, 'err');
+      if(res.success) { alert('Password Changed. Please Login.'); show('view-login'); } 
+      else msg('resetMsg', res.message, 'err');
     }).catch(e => msg('resetMsg', e.message, 'err'));
   };
 
   function loadForm() {
     get('dispName').textContent = currentUser.name.split(' ')[0]; get('dispCode').textContent = currentUser.empCode;
     show('view-form');
-    // Fetch options only if empty
+    // Auto-fetch options if dropdown is empty
     if(get('zone').options.length <= 1) fetchOpts();
   }
 
+  // --- 4. DROPDOWN LOGIC ---
   function populate(id, list) {
     const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join('');
     el.disabled = !list || !list.length;
@@ -216,18 +234,24 @@
       remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
       populate('zone', r.zones); populate('dependency', r.dependencies);
       populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
-    }).catch(e=>{});
+    }).catch(e=>{ console.log("Sync bg failed", e) });
   }
+  
   get('btnSync').onclick = () => { msg('formMsg','Syncing...'); fetchOpts(); setTimeout(()=>msg('formMsg',''),1000); };
 
-  // CASCADING DROPDOWNS
+  // Cascading Events
   get('zone').onchange = e => { populate('circle', circlesByZone[e.target.value]); populate('division',[]); };
   get('circle').onchange = e => { populate('division', divisionsByPair[`${get('zone').value}||${e.target.value}`]); };
   get('dependency').onchange = e => { populate('remBucket', remarksByDep[e.target.value]); populate('finBucket',[]); };
   get('remBucket').onchange = e => { populate('finBucket', finalsByPair[`${get('dependency').value}||${e.target.value}`]); };
+  
+  // Format Meter No (Upper + Alphanumeric only)
   get('meterNo').oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); };
   
-  // IMAGES
+  // Auto-resize Textareas
+  document.querySelectorAll('textarea').forEach(t => t.oninput = function(){this.style.height='auto';this.style.height=this.scrollHeight+'px'});
+
+  // --- 5. IMAGE HANDLING ---
   function handleImg(e, k) {
     const f = e.target.files[0]; if(!f) { imgs[k]=null; get('p_'+k).classList.remove('show'); return; }
     const r = new FileReader();
@@ -235,20 +259,21 @@
       get('i_'+k).src = ev.target.result; get('p_'+k).classList.add('show');
       const i = new Image();
       i.onload = () => {
+        // Compress Image to save data/bandwidth (Max 1000px)
         const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
         c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-        imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
+        imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1]; // Quality 0.6
       }; i.src = ev.target.result;
     }; r.readAsDataURL(f);
   }
   get('f_meter').onchange = e => handleImg(e,'meter'); get('f_ct').onchange = e => handleImg(e,'ct'); get('f_dt').onchange = e => handleImg(e,'dt');
 
-  // SUBMIT
+  // --- 6. SUBMIT REPORT ---
   get('btnSave').onclick = () => {
     const val = id => get(id).value.trim();
     const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), materialRequired:val('matReq'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus'), vehicleRequired:val('vehReq') };
     
-    // VALIDATION
+    // Front-End Validation
     if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus || !p.vehicleRequired) return msg('formMsg','Missing selections/inputs','err');
     if(!p.fieldRemark || !p.materialRequired) return msg('formMsg','Fill Remarks & Material','err');
     if(!get('remBucket').disabled && !p.remarkBucket) return msg('formMsg','Select Remark Bucket','err');
@@ -259,11 +284,16 @@
     msg('formMsg','Saving Report...');
     
     // Attach Images
-    p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
+    p.imageBase64_meter = imgs.meter; 
+    p.imageBase64_ct = imgs.ct; 
+    p.imageBase64_dtcable = imgs.dt;
 
+    // Call API (Action: submitFinal)
     callApi('submitFinal', p).then(res => {
       if(res.ok) {
-        msg('formMsg',''); resetForm(); modal('Success', 'Report Saved! Syncing in background.');
+        msg('formMsg',''); 
+        resetForm(); 
+        modal('Success', 'Report Saved! Syncing in background.');
       } else {
         msg('formMsg', res.message || 'Error', 'err');
       }
@@ -274,7 +304,9 @@
     ['meterNo','fieldRemark','matReq','f_meter','f_ct','f_dt'].forEach(id=>get(id).value='');
     ['zone','dependency','rectStatus','vehReq'].forEach(id=>get(id).selectedIndex=0);
     get('zone').dispatchEvent(new Event('change')); get('dependency').dispatchEvent(new Event('change'));
-    ['p_meter','p_ct','p_dt'].forEach(id=>get(id).classList.remove('show')); imgs.meter=null; imgs.ct=null; imgs.dt=null; window.scrollTo(0,0);
+    ['p_meter','p_ct','p_dt'].forEach(id=>get(id).classList.remove('show')); 
+    imgs.meter=null; imgs.ct=null; imgs.dt=null; 
+    window.scrollTo(0,0);
   }
 
   function modal(t, tx) { get('mTitle').textContent=t; get('mText').textContent=tx; get('modal').classList.add('open'); }
