@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.2</title>
+  <title>Field Visit App v2.3</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -38,7 +38,7 @@
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
-    /* --- NEW CSS FOR O&M VISIBILITY (Enhanced) --- */
+    /* --- CSS FOR O&M VISIBILITY (Enhanced) --- */
     .mat-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .mat-table td { padding: 12px 8px; border-bottom: 1px solid #ddd; vertical-align: middle; }
     
@@ -87,6 +87,7 @@
     .modal-btns { text-align: right; margin-top: 20px; }
     .modal-btns button { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; margin-left: 10px; }
     .btn-ok { background: var(--primary); color: #fff; }
+    .btn-cancel { background: #f0f0f0; color: #333; border: 1px solid #ccc; }
     
     /* Conditional Sections */
     .hidden { display: none !important; }
@@ -209,7 +210,10 @@
   <div class="modal">
     <h3 id="mTitle">Title</h3>
     <div id="mBody"></div>
-    <div class="modal-btns"><button id="mOk" class="btn-ok">OK</button></div>
+    <div class="modal-btns">
+      <button id="mCancel" class="btn-cancel" style="display:none;">CANCEL</button>
+      <button id="mOk" class="btn-ok">OK</button>
+    </div>
   </div>
 </div>
 
@@ -219,7 +223,6 @@
   const API_URL = "https://script.google.com/macros/s/AKfycbycPr0Ef3R4YRqgwT_jCTz_-3SNIwjyifXCCbzlZtwPEHiKeP9ofFRw9U1AgLiUW7wC/exec"; 
   // -------------------------------------------------------------
 
-  // --- UPDATED O&M MATERIAL CONFIGURATION (Requirement 4) ---
   const MATERIAL_CONFIG = [
     { id: 1, name: "3-Phase LTCT DT Smart Meter", type: "COUNT" },
     { id: 2, name: "3-Phase HTCT / Feeder Smart Meter", type: "COUNT" },
@@ -229,19 +232,7 @@
     { id: 6, name: "NIC Card (GPRS / RF)", type: "COUNT" },
     { id: 7, name: "Gateway / Router / Access Point", type: "COUNT" },
     { id: 8, name: "Sticker / Label", type: "COUNT" },
-    // "Others" converted to DROPDOWN as requested
-    { 
-      id: 9, 
-      name: "Others", 
-      type: "DROPDOWN", 
-      options: [
-        "Incoming Cable Connected", 
-        "Outgoing Cable Connected", 
-        "PT Wire Connected", 
-        "Screw Tight", 
-        "Other"
-      ] 
-    }
+    { id: 9, name: "Others", type: "DROPDOWN", options: ["Incoming Cable Connected", "Outgoing Cable Connected", "PT Wire Connected", "Screw Tight", "Other"] }
   ];
 
   let currentUser = null;
@@ -316,7 +307,7 @@
     show('view-form');
   };
 
-  // --- STRICT DUPLICATE CHECK (With Mobile Number) ---
+  // --- DUPLICATE CHECK: FIRST TIME VISIT (BLOCKING) ---
   get('meterNo').onblur = async function() {
     const m = this.value.trim();
     const btn = get('btnSave');
@@ -324,39 +315,40 @@
     btn.disabled = false;
 
     if (m.length < 5) return; 
-    if (currentMode !== 'NEW') return; 
+    
+    // Check duplicates on Blur ONLY for NEW. For O&M, it happens on Submit.
+    if (currentMode === 'NEW') {
+      get('dupWarning').textContent = 'Checking availability...';
+      get('dupWarning').style.color = 'orange';
 
-    get('dupWarning').textContent = 'Checking availability...';
-    get('dupWarning').style.color = 'orange';
-
-    try {
-      const res = await callApi('checkMeter', { meterNo: m });
-      if (res.exists) {
-        const d = res.meta;
-        btn.disabled = true;
-        get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.';
-        get('dupWarning').style.color = 'red';
-        
-        // REQ: Include Mobile Number
-        const html = `
-          <div class="warn-box">
-             <strong>Already Submitted By:</strong><br>
-             Name: ${d.name}<br>
-             Role: ${d.designation}<br>
-             <span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>
-             Date: ${d.date}<br>
-             Meter: ${d.meter}
-          </div>
-          <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance. Contact admin if this is an error.</p>
-        `;
-        modal('Duplicate Entry Detected', html);
-      } else {
-        get('dupWarning').textContent = '';
-      }
-    } catch(e) { console.log(e); }
+      try {
+        const res = await callApi('checkMeter', { meterNo: m });
+        if (res.exists) {
+          const d = res.meta;
+          btn.disabled = true;
+          get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.';
+          get('dupWarning').style.color = 'red';
+          
+          const html = `
+            <div class="warn-box">
+               <strong>Already Submitted By:</strong><br>
+               Name: ${d.name}<br>
+               Role: ${d.designation}<br>
+               <span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>
+               Date: ${d.date}<br>
+               Meter: ${d.meter}
+            </div>
+            <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance. Contact admin if this is an error.</p>
+          `;
+          modal('Duplicate Entry Detected', html);
+        } else {
+          get('dupWarning').textContent = '';
+        }
+      } catch(e) { console.log(e); }
+    }
   };
 
-  // --- ENHANCED TABLE RENDERING (Highlighting & Dropdowns) ---
+  // --- O&M TABLE LOGIC ---
   function renderOMTable() {
     const tb = get('matTableBody');
     tb.innerHTML = '';
@@ -382,7 +374,6 @@
       tb.insertAdjacentHTML('beforeend', row);
     });
 
-    // Toggle Input & Highlight
     tb.querySelectorAll('.mat-check').forEach(ck => {
       ck.onchange = (e) => {
         const tr = e.target.closest('tr');
@@ -391,7 +382,7 @@
 
         if (e.target.checked) {
           ctrl.style.display = 'block';
-          tr.classList.add('selected'); // Visual Pop
+          tr.classList.add('selected');
           if(inp) inp.focus();
         } else {
           ctrl.style.display = 'none';
@@ -465,11 +456,12 @@
   get('f_before').onchange = e => handleImg(e,'before');
   get('f_after').onchange = e => handleImg(e,'after');
 
-  // --- SUBMIT LOGIC ---
-  get('btnSave').onclick = () => {
+  // --- SUBMIT LOGIC (ENHANCED) ---
+  get('btnSave').onclick = async () => {
     const val = id => get(id).value.trim();
     const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus') };
     
+    // Base Validation
     if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus) return msg('formMsg','Missing selections','err');
     if(!p.fieldRemark) return msg('formMsg','Field Remark is required','err');
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Error','Invalid Meter No format');
@@ -483,24 +475,69 @@
       if(!p.materialRequired) return msg('formMsg','Material Req is required','err');
       if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','3 Photos Required','err');
       p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
+      
+      // Proceed to submit (dup check handled on blur)
+      submitPayload(action, p);
     
     } else { 
+      // --- O&M FLOW ---
       action = 'submitOM';
       
       const matRes = getOMData();
       if(matRes.error) return msg('formMsg', matRes.error, 'err');
-
-      // REQ: Mandatory Material Selection Check (Client Side)
-      if(matRes.data.length === 0) {
-        return modal('Validation Error', 'You must select at least one material used.');
-      }
+      if(matRes.data.length === 0) return modal('Validation Error', 'You must select at least one material used.');
 
       p.materialData = matRes.data; 
       
       if(!imgs.before || !imgs.after) return msg('formMsg','Before & After Photos Required','err');
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
-    }
 
+      // 1. CHECK HISTORY FIRST
+      msg('formMsg', 'Checking history...');
+      try {
+        const hist = await callApi('checkOMHistory', { meterNo: p.meterNo });
+        
+        if (hist.count > 0) {
+          // SHOW CONFIRMATION MODAL
+          const d = hist.lastMeta;
+          const nextVisit = hist.count + 1;
+          
+          let suffix = 'th';
+          if(nextVisit===1) suffix='st'; else if(nextVisit===2) suffix='nd'; else if(nextVisit===3) suffix='rd';
+
+          const html = `
+            <div class="warn-box" style="border:1px solid #f9ab00; background:#fff8e1;">
+               <strong>Already O&M done ${hist.count} times.</strong><br><br>
+               <strong>Last Visited By:</strong><br>
+               Name: ${d.name}<br>
+               Role: ${d.designation}<br>
+               Mobile: ${d.mobile}<br>
+               Date: ${d.date}
+            </div>
+            <p style="font-weight:600; margin-top:10px;">
+               This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}${suffix}</span> Visit for O&M.
+            </p>
+            <p>Please confirm whether you really want to submit the form.</p>
+          `;
+          
+          // Show Modal with Cancel/Confirm
+          modal('Repeat Visit Confirmation', html, true, () => {
+             // User Confirmed
+             submitPayload(action, p);
+          });
+          msg('formMsg', ''); // Clear "checking" msg
+
+        } else {
+          // No history, direct submit
+          submitPayload(action, p);
+        }
+      } catch (e) {
+        msg('formMsg', 'Error checking history: ' + e.message, 'err');
+      }
+    }
+  };
+
+  function submitPayload(action, p) {
     msg('formMsg','Saving Report...');
     callApi(action, p).then(res => {
       if(res.ok) {
@@ -510,7 +547,7 @@
         modal('Success', 'Report Saved Successfully!');
       } else msg('formMsg', res.message || 'Error', 'err');
     }).catch(e => msg('formMsg', e.message, 'err'));
-  };
+  }
 
   function resetForm() {
     ['meterNo','fieldRemark','matReq'].forEach(id=>get(id).value='');
@@ -526,8 +563,27 @@
     window.scrollTo(0,0);
   }
 
-  function modal(t, tx) { get('mTitle').textContent=t; get('mBody').innerHTML=tx; get('modal').classList.add('open'); }
-  get('mOk').onclick = () => get('modal').classList.remove('open');
+  function modal(t, tx, showCancel=false, onConfirm=null) { 
+    get('mTitle').textContent=t; 
+    get('mBody').innerHTML=tx; 
+    
+    const btnCancel = get('mCancel');
+    const btnOk = get('mOk');
+    
+    if(showCancel) {
+      btnCancel.style.display = 'inline-block';
+      btnCancel.onclick = () => get('modal').classList.remove('open');
+      btnOk.textContent = 'CONFIRM & SUBMIT';
+      btnOk.onclick = () => { get('modal').classList.remove('open'); if(onConfirm) onConfirm(); };
+    } else {
+      btnCancel.style.display = 'none';
+      btnOk.textContent = 'OK';
+      btnOk.onclick = () => get('modal').classList.remove('open');
+    }
+    
+    get('modal').classList.add('open'); 
+  }
+  
   get('btnToReset').onclick = () => show('view-reset');
 
   initAuth();
