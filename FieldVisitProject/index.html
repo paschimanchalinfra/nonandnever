@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.3</title>
+  <title>Field Visit App v2.4</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -38,24 +38,15 @@
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
-    /* --- CSS FOR O&M VISIBILITY (Enhanced) --- */
+    /* --- CSS FOR O&M VISIBILITY --- */
     .mat-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .mat-table td { padding: 12px 8px; border-bottom: 1px solid #ddd; vertical-align: middle; }
     
-    /* Larger Checkboxes with Brand Color */
     .mat-check { 
-      width: 24px; 
-      height: 24px; 
-      cursor: pointer;
-      accent-color: var(--primary); 
-      transform: scale(1.1);
-      margin-right: 10px;
+      width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); 
+      transform: scale(1.1); margin-right: 10px;
     }
-
-    /* Highlight Selected Rows */
     tr.selected { background-color: #e8f0fe; }
-    
-    /* Full width inputs in table */
     .mat-inp { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
 
     /* Password Eye */
@@ -91,6 +82,10 @@
     
     /* Conditional Sections */
     .hidden { display: none !important; }
+    
+    /* LOCKED SECTION for O&M Flow */
+    #om-flow-locked { opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
+    #om-flow-locked.unlocked { opacity: 1; pointer-events: auto; }
   </style>
 </head>
 <body>
@@ -161,30 +156,7 @@
     <label>Meter No <span class="req">*</span></label><input id="meterNo" type="text" maxlength="10" placeholder="e.g. AL12345678">
     <div style="font-size:12px;color:#666;margin-top:4px;">Format: 2 Letters (A-Z) + 7-8 Digits</div>
     <div id="dupWarning" style="color:red; font-size:12px; margin-top:5px; font-weight:bold;"></div>
-
-    <div class="sec-title">Remarks</div>
-    <label>Field Remark <span class="req">*</span></label><textarea id="fieldRemark" rows="1"></textarea>
-
-    <div id="sec-mat-req">
-       <label>Material Required <span class="req">*</span></label><textarea id="matReq" rows="1"></textarea>
-    </div>
-
-    <div id="sec-mat-used" class="hidden">
-       <div class="sec-title">Material Used</div>
-       <table class="mat-table" id="matTableBody">
-         </table>
-    </div>
-
-    <label>Dependency <span class="req">*</span></label><select id="dependency"><option value="">Select</option></select>
-    <label>Remark Bucket <span class="req">*</span></label><select id="remBucket" disabled><option value="">Select</option></select>
-    <label>Final Bucket <span class="req">*</span></label><select id="finBucket" disabled><option value="">Select</option></select>
-
-    <label>Rectification Status <span class="req">*</span></label><select id="rectStatus"><option value="">Select</option></select>
     
-    <div id="sec-veh">
-      <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
-    </div>
-
     <div class="sec-title">Photos</div>
     
     <div id="img-sec-new">
@@ -193,9 +165,41 @@
       <label>With DT & Cable <span class="req">*</span></label><input id="f_dt" type="file" accept="image/*" capture="environment"><div id="p_dt" class="img-box"><img id="i_dt"></div>
     </div>
 
-    <div id="img-sec-om" class="hidden">
-      <label>Image Before O&M <span class="req">*</span></label><input id="f_before" type="file" accept="image/*" capture="environment"><div id="p_before" class="img-box"><img id="i_before"></div>
-      <label>Image After O&M <span class="req">*</span></label><input id="f_after" type="file" accept="image/*" capture="environment"><div id="p_after" class="img-box"><img id="i_after"></div>
+    <div id="img-sec-om-before" class="hidden">
+      <label style="color:var(--primary);">Step 1: Image Before O&M <span class="req">*</span></label>
+      <input id="f_before" type="file" accept="image/*" capture="environment">
+      <div id="p_before" class="img-box"><img id="i_before"></div>
+    </div>
+
+    <div id="om-flow-locked">
+        <div class="sec-title">Remarks & Data</div>
+        <label>Field Remark <span class="req">*</span></label><textarea id="fieldRemark" rows="1"></textarea>
+
+        <div id="sec-mat-req">
+           <label>Material Required <span class="req">*</span></label><textarea id="matReq" rows="1"></textarea>
+        </div>
+
+        <div id="sec-mat-used" class="hidden">
+           <div class="sec-title">Material Used</div>
+           <table class="mat-table" id="matTableBody">
+             </table>
+        </div>
+
+        <label>Dependency <span class="req">*</span></label><select id="dependency"><option value="">Select</option></select>
+        <label>Remark Bucket <span class="req">*</span></label><select id="remBucket" disabled><option value="">Select</option></select>
+        <label>Final Bucket <span class="req">*</span></label><select id="finBucket" disabled><option value="">Select</option></select>
+
+        <label>Rectification Status <span class="req">*</span></label><select id="rectStatus"><option value="">Select</option></select>
+        
+        <div id="sec-veh">
+          <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
+        </div>
+        
+        <div id="img-sec-om-after" class="hidden" style="margin-top:20px;">
+          <label>Step 2: Image After O&M <span class="req">*</span></label>
+          <input id="f_after" type="file" accept="image/*" capture="environment">
+          <div id="p_after" class="img-box"><img id="i_after"></div>
+        </div>
     </div>
 
     <div class="actions">
@@ -236,7 +240,7 @@
   ];
 
   let currentUser = null;
-  let currentMode = 'NEW'; // 'NEW' or 'OM'
+  let currentMode = 'NEW'; 
   let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
   const imgs = { meter:null, ct:null, dt:null, before:null, after:null };
   
@@ -263,14 +267,12 @@
   get('btnLogin').onclick = () => {
     const c=get('loginCode').value.trim(), p=get('loginPass').value.trim();
     if(!c||!p) return msg('loginMsg','Enter credentials','err');
-    
     msg('loginMsg','Verifying...');
     callApi('login', { empCode: c, password: p }).then(res => {
       if(res.success) { 
         currentUser={empCode:res.empCode, name:res.name}; 
         localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
-        msg('loginMsg',''); 
-        loadDashboard(); 
+        msg('loginMsg',''); loadDashboard(); 
       } else msg('loginMsg', res.message, 'err');
     }).catch(e => msg('loginMsg', e.message, 'err'));
   };
@@ -290,24 +292,46 @@
     resetForm();
     get('formTitle').textContent = mode === 'NEW' ? 'New Visit' : 'O&M Visit';
     
+    // Default: Unlock everything
+    const locker = get('om-flow-locked');
+    locker.classList.remove('unlocked'); // Reset state
+    
     if (mode === 'NEW') {
       get('sec-mat-req').classList.remove('hidden');
       get('sec-mat-used').classList.add('hidden');
       get('img-sec-new').classList.remove('hidden');
-      get('img-sec-om').classList.add('hidden');
+      get('img-sec-om-before').classList.add('hidden');
+      get('img-sec-om-after').classList.add('hidden');
       get('sec-veh').classList.remove('hidden');
+      
+      // Unlock immediately for New Visit
+      locker.classList.add('unlocked');
+      
     } else {
+      // O&M: Lock everything initially
+      locker.classList.remove('unlocked');
+      
       get('sec-mat-req').classList.add('hidden');
       get('sec-mat-used').classList.remove('hidden');
       get('img-sec-new').classList.add('hidden');
-      get('img-sec-om').classList.remove('hidden');
+      
+      // Show Before Image Input (Trigger for unlock)
+      get('img-sec-om-before').classList.remove('hidden');
+      get('img-sec-om-after').classList.remove('hidden'); // It's inside locker, so it's hidden by opacity/pointer events
       get('sec-veh').classList.add('hidden');
+      
       renderOMTable();
     }
     show('view-form');
   };
 
-  // --- DUPLICATE CHECK: FIRST TIME VISIT (BLOCKING) ---
+  // --- UNLOCK LOGIC FOR O&M ---
+  function unlockOMFlow() {
+    if(currentMode === 'OM') {
+      get('om-flow-locked').classList.add('unlocked');
+    }
+  }
+
   get('meterNo').onblur = async function() {
     const m = this.value.trim();
     const btn = get('btnSave');
@@ -316,11 +340,9 @@
 
     if (m.length < 5) return; 
     
-    // Check duplicates on Blur ONLY for NEW. For O&M, it happens on Submit.
     if (currentMode === 'NEW') {
       get('dupWarning').textContent = 'Checking availability...';
       get('dupWarning').style.color = 'orange';
-
       try {
         const res = await callApi('checkMeter', { meterNo: m });
         if (res.exists) {
@@ -328,30 +350,23 @@
           btn.disabled = true;
           get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.';
           get('dupWarning').style.color = 'red';
-          
           const html = `
             <div class="warn-box">
                <strong>Already Submitted By:</strong><br>
-               Name: ${d.name}<br>
-               Role: ${d.designation}<br>
+               Name: ${d.name}<br>Role: ${d.designation}<br>
                <span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>
-               Date: ${d.date}<br>
-               Meter: ${d.meter}
+               Date: ${d.date}<br>Meter: ${d.meter}
             </div>
-            <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance. Contact admin if this is an error.</p>
+            <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance.</p>
           `;
           modal('Duplicate Entry Detected', html);
-        } else {
-          get('dupWarning').textContent = '';
-        }
+        } else { get('dupWarning').textContent = ''; }
       } catch(e) { console.log(e); }
     }
   };
 
-  // --- O&M TABLE LOGIC ---
   function renderOMTable() {
-    const tb = get('matTableBody');
-    tb.innerHTML = '';
+    const tb = get('matTableBody'); tb.innerHTML = '';
     MATERIAL_CONFIG.forEach((item, idx) => {
       let inputHtml = '';
       if(item.type === 'COUNT') {
@@ -359,43 +374,29 @@
       } else if(item.type === 'DROPDOWN') {
         inputHtml = `<select class="mat-inp mat-val"><option value="">Select Option</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
       } 
-
       const row = `
         <tr data-id="${item.id}" data-type="${item.type}" data-name="${item.name}">
-          <td width="40" style="vertical-align: middle; text-align: center;">
-             <input type="checkbox" class="mat-check">
-          </td>
-          <td>
-            <div style="font-weight:600;margin-bottom:6px;">${item.name}</div>
-            <div class="mat-ctrl" style="display:none;">${inputHtml}</div>
-          </td>
-        </tr>
-      `;
+          <td width="40" style="vertical-align: middle; text-align: center;"><input type="checkbox" class="mat-check"></td>
+          <td><div style="font-weight:600;margin-bottom:6px;">${item.name}</div><div class="mat-ctrl" style="display:none;">${inputHtml}</div></td>
+        </tr>`;
       tb.insertAdjacentHTML('beforeend', row);
     });
-
     tb.querySelectorAll('.mat-check').forEach(ck => {
       ck.onchange = (e) => {
         const tr = e.target.closest('tr');
         const ctrl = tr.querySelector('.mat-ctrl');
         const inp = tr.querySelector('.mat-val');
-
         if (e.target.checked) {
-          ctrl.style.display = 'block';
-          tr.classList.add('selected');
-          if(inp) inp.focus();
+          ctrl.style.display = 'block'; tr.classList.add('selected'); if(inp) inp.focus();
         } else {
-          ctrl.style.display = 'none';
-          tr.classList.remove('selected');
-          if(inp) inp.value = ''; 
+          ctrl.style.display = 'none'; tr.classList.remove('selected'); if(inp) inp.value = ''; 
         }
       };
     });
   }
 
   function getOMData() {
-    const list = [];
-    let err = null;
+    const list = []; let err = null;
     document.querySelectorAll('#matTableBody tr').forEach(tr => {
       const ck = tr.querySelector('.mat-check');
       if(ck.checked) {
@@ -403,13 +404,10 @@
         const valEl = tr.querySelector('.mat-val');
         const val = valEl.value.trim();
         const name = tr.dataset.name;
-
         if(!val || (type==='COUNT' && val<=0)) { err = `Please complete details for ${name}`; return; }
-        
         let obj = { name: name, type: type };
         if(type==='COUNT') obj.count = val;
         else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
-        
         list.push(obj);
       }
     });
@@ -446,6 +444,10 @@
         const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
         c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
         imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
+        
+        // UNLOCK FLOW TRIGGER
+        if(k === 'before') unlockOMFlow();
+
       }; i.src = ev.target.result;
     }; r.readAsDataURL(f);
   }
@@ -456,12 +458,10 @@
   get('f_before').onchange = e => handleImg(e,'before');
   get('f_after').onchange = e => handleImg(e,'after');
 
-  // --- SUBMIT LOGIC (ENHANCED) ---
   get('btnSave').onclick = async () => {
     const val = id => get(id).value.trim();
     const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus') };
     
-    // Base Validation
     if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus) return msg('formMsg','Missing selections','err');
     if(!p.fieldRemark) return msg('formMsg','Field Remark is required','err');
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Error','Invalid Meter No format');
@@ -475,65 +475,38 @@
       if(!p.materialRequired) return msg('formMsg','Material Req is required','err');
       if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','3 Photos Required','err');
       p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
-      
-      // Proceed to submit (dup check handled on blur)
       submitPayload(action, p);
     
     } else { 
-      // --- O&M FLOW ---
       action = 'submitOM';
       
       const matRes = getOMData();
       if(matRes.error) return msg('formMsg', matRes.error, 'err');
       if(matRes.data.length === 0) return modal('Validation Error', 'You must select at least one material used.');
-
       p.materialData = matRes.data; 
       
       if(!imgs.before || !imgs.after) return msg('formMsg','Before & After Photos Required','err');
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
 
-      // 1. CHECK HISTORY FIRST
       msg('formMsg', 'Checking history...');
       try {
         const hist = await callApi('checkOMHistory', { meterNo: p.meterNo });
-        
         if (hist.count > 0) {
-          // SHOW CONFIRMATION MODAL
           const d = hist.lastMeta;
           const nextVisit = hist.count + 1;
-          
-          let suffix = 'th';
-          if(nextVisit===1) suffix='st'; else if(nextVisit===2) suffix='nd'; else if(nextVisit===3) suffix='rd';
-
           const html = `
             <div class="warn-box" style="border:1px solid #f9ab00; background:#fff8e1;">
                <strong>Already O&M done ${hist.count} times.</strong><br><br>
-               <strong>Last Visited By:</strong><br>
-               Name: ${d.name}<br>
-               Role: ${d.designation}<br>
-               Mobile: ${d.mobile}<br>
-               Date: ${d.date}
+               <strong>Last Visited By:</strong><br>Name: ${d.name}<br>Role: ${d.designation}<br>Mobile: ${d.mobile}<br>Date: ${d.date}
             </div>
-            <p style="font-weight:600; margin-top:10px;">
-               This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}${suffix}</span> Visit for O&M.
-            </p>
-            <p>Please confirm whether you really want to submit the form.</p>
-          `;
-          
-          // Show Modal with Cancel/Confirm
-          modal('Repeat Visit Confirmation', html, true, () => {
-             // User Confirmed
-             submitPayload(action, p);
-          });
-          msg('formMsg', ''); // Clear "checking" msg
-
+            <p style="font-weight:600; margin-top:10px;">This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}th</span> Visit.</p>
+            <p>Please confirm submission.</p>`;
+          modal('Repeat Visit Confirmation', html, true, () => { submitPayload(action, p); });
+          msg('formMsg', ''); 
         } else {
-          // No history, direct submit
           submitPayload(action, p);
         }
-      } catch (e) {
-        msg('formMsg', 'Error checking history: ' + e.message, 'err');
-      }
+      } catch (e) { msg('formMsg', 'Error checking history: ' + e.message, 'err'); }
     }
   };
 
@@ -541,9 +514,7 @@
     msg('formMsg','Saving Report...');
     callApi(action, p).then(res => {
       if(res.ok) {
-        msg('formMsg',''); 
-        resetForm(); 
-        show('view-dashboard');
+        msg('formMsg',''); resetForm(); show('view-dashboard');
         modal('Success', 'Report Saved Successfully!');
       } else msg('formMsg', res.message || 'Error', 'err');
     }).catch(e => msg('formMsg', e.message, 'err'));
@@ -560,32 +531,28 @@
     
     get('btnSave').disabled = false;
     get('dupWarning').textContent = '';
+    
+    // Re-lock
+    get('om-flow-locked').classList.remove('unlocked');
     window.scrollTo(0,0);
   }
 
   function modal(t, tx, showCancel=false, onConfirm=null) { 
-    get('mTitle').textContent=t; 
-    get('mBody').innerHTML=tx; 
-    
-    const btnCancel = get('mCancel');
-    const btnOk = get('mOk');
-    
+    get('mTitle').textContent=t; get('mBody').innerHTML=tx; 
+    const btnCancel = get('mCancel'); const btnOk = get('mOk');
     if(showCancel) {
       btnCancel.style.display = 'inline-block';
       btnCancel.onclick = () => get('modal').classList.remove('open');
       btnOk.textContent = 'CONFIRM & SUBMIT';
       btnOk.onclick = () => { get('modal').classList.remove('open'); if(onConfirm) onConfirm(); };
     } else {
-      btnCancel.style.display = 'none';
-      btnOk.textContent = 'OK';
+      btnCancel.style.display = 'none'; btnOk.textContent = 'OK';
       btnOk.onclick = () => get('modal').classList.remove('open');
     }
-    
     get('modal').classList.add('open'); 
   }
   
   get('btnToReset').onclick = () => show('view-reset');
-
   initAuth();
 </script>
 </body>
