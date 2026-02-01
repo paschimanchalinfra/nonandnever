@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App</title>
+  <title>Field Visit App v2.1</title>
   <style>
     /* --- CSS STYLES --- */
-    :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; }
+    :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
@@ -22,6 +22,12 @@
     .user-info { text-align: right; font-size: 13px; color: #5f6368; margin-right: 12px; }
     .btn-logout { background: #fce8e6; color: var(--err); border: 1px solid #fad2cf; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
     
+    /* Dashboard Buttons */
+    .dash-btn { background: #fff; border: 1px solid #ddd; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.1s; }
+    .dash-btn:active { transform: scale(0.98); background: #f8f9fa; }
+    .dash-btn h3 { margin: 0 0 5px; color: var(--primary); }
+    .dash-btn p { margin: 0; color: #666; font-size: 13px; }
+
     /* Inputs */
     .sec-title { margin: 30px 0 10px; font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
     label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; }
@@ -32,6 +38,12 @@
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
+    /* Material Table (O&M) */
+    .mat-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    .mat-table td { padding: 8px 4px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .mat-check { width: 20px; height: 20px; }
+    .mat-inp { padding: 8px; width: 100%; }
+
     /* Password Eye */
     .pass-wrap { position: relative; width: 100%; }
     .pass-wrap input { padding-right: 45px; }
@@ -40,6 +52,7 @@
     /* Buttons */
     .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
     button.main { background: var(--primary); color: #fff; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    button.main:disabled { background: #ccc; cursor: not-allowed; }
     button.link { background: none; border: none; color: #5f6368; text-decoration: underline; cursor: pointer; padding: 10px; }
     
     /* Images */
@@ -50,30 +63,33 @@
     /* Messaging */
     .msg { text-align: center; margin-top: 15px; font-weight: 500; min-height: 20px; }
     .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
+    
+    /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 1000; padding: 20px; }
     .modal-overlay.open { display: grid; }
     .modal { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .modal h3 { margin: 0 0 10px; }
+    .warn-box { background: #fff3e0; color: #e65100; padding: 10px; border-radius: 6px; font-size: 13px; margin: 10px 0; border: 1px solid #ffe0b2; }
     .modal-btns { text-align: right; margin-top: 20px; }
     .modal-btns button { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; margin-left: 10px; }
     .btn-ok { background: var(--primary); color: #fff; }
+    
+    /* Conditional Sections */
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
 <div class="container">
+  
   <div id="view-login" class="view-section active">
     <div style="margin: 60px 0 40px;"><h1>Welcome</h1><p style="color:#5f6368;">Log in to continue</p></div>
-    
-    <label>Emp Code</label>
-    <input id="loginCode" type="text" placeholder="Enter ID (e.g. INTL123)">
-    
+    <label>Emp Code</label><input id="loginCode" type="text" placeholder="Enter ID (e.g. INTL123)">
     <label>Password</label>
     <div class="pass-wrap">
       <input id="loginPass" type="password">
       <span id="togglePass" class="pass-toggle">👁️</span>
     </div>
-    
     <div class="actions">
       <button class="main" id="btnLogin">LOGIN</button>
       <button class="link" id="btnToReset">Change Password</button>
@@ -93,13 +109,32 @@
     <div id="resetMsg" class="msg"></div>
   </div>
 
-  <div id="view-form" class="view-section">
+  <div id="view-dashboard" class="view-section">
     <div class="app-header">
       <div class="brand">📋 Field Visit</div>
       <div style="display:flex;align-items:center;">
-        <div class="user-info"><div id="dispName" style="font-weight:700;color:#000;">User</div><div id="dispCode">ID</div></div>
-        <button id="btnLogout" class="btn-logout">Logout</button>
+        <div class="user-info"><div id="dName" style="font-weight:700;">User</div><div id="dCode">ID</div></div>
+        <button id="btnDLogout" class="btn-logout">Logout</button>
       </div>
+    </div>
+
+    <div style="margin-top: 40px;">
+      <div class="dash-btn" onclick="openForm('NEW')">
+        <h3>✨ First Time Visit</h3>
+        <p>New installation report. Checks for duplicates.</p>
+      </div>
+      
+      <div class="dash-btn" onclick="openForm('OM')">
+        <h3>🛠️ O&M Visit</h3>
+        <p>Maintenance, Rectification & Material Usage.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-form" class="view-section">
+    <div class="app-header">
+      <div class="brand" id="formTitle">Report</div>
+      <button onclick="show('view-dashboard')" class="link" style="font-size:12px;">Back</button>
     </div>
 
     <div class="sec-title">Location</div>
@@ -110,22 +145,43 @@
     <div class="sec-title">Details</div>
     <label>Meter No <span class="req">*</span></label><input id="meterNo" type="text" maxlength="10" placeholder="e.g. AL12345678">
     <div style="font-size:12px;color:#666;margin-top:4px;">Format: 2 Letters (A-Z) + 7-8 Digits</div>
+    <div id="dupWarning" style="color:red; font-size:12px; margin-top:5px; font-weight:bold;"></div>
 
     <div class="sec-title">Remarks</div>
     <label>Field Remark <span class="req">*</span></label><textarea id="fieldRemark" rows="1"></textarea>
-    <label>Material Required <span class="req">*</span></label><textarea id="matReq" rows="1"></textarea>
+
+    <div id="sec-mat-req">
+       <label>Material Required <span class="req">*</span></label><textarea id="matReq" rows="1"></textarea>
+    </div>
+
+    <div id="sec-mat-used" class="hidden">
+       <div class="sec-title">Material Used</div>
+       <table class="mat-table" id="matTableBody">
+         </table>
+    </div>
 
     <label>Dependency <span class="req">*</span></label><select id="dependency"><option value="">Select</option></select>
     <label>Remark Bucket <span class="req">*</span></label><select id="remBucket" disabled><option value="">Select</option></select>
     <label>Final Bucket <span class="req">*</span></label><select id="finBucket" disabled><option value="">Select</option></select>
 
     <label>Rectification Status <span class="req">*</span></label><select id="rectStatus"><option value="">Select</option></select>
-    <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
+    
+    <div id="sec-veh">
+      <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
+    </div>
 
     <div class="sec-title">Photos</div>
-    <label>Meter Image <span class="req">*</span></label><input id="f_meter" type="file" accept="image/*" capture="environment"><div id="p_meter" class="img-box"><img id="i_meter"></div>
-    <label>With CT <span class="req">*</span></label><input id="f_ct" type="file" accept="image/*" capture="environment"><div id="p_ct" class="img-box"><img id="i_ct"></div>
-    <label>With DT & Cable <span class="req">*</span></label><input id="f_dt" type="file" accept="image/*" capture="environment"><div id="p_dt" class="img-box"><img id="i_dt"></div>
+    
+    <div id="img-sec-new">
+      <label>Meter Image <span class="req">*</span></label><input id="f_meter" type="file" accept="image/*" capture="environment"><div id="p_meter" class="img-box"><img id="i_meter"></div>
+      <label>With CT <span class="req">*</span></label><input id="f_ct" type="file" accept="image/*" capture="environment"><div id="p_ct" class="img-box"><img id="i_ct"></div>
+      <label>With DT & Cable <span class="req">*</span></label><input id="f_dt" type="file" accept="image/*" capture="environment"><div id="p_dt" class="img-box"><img id="i_dt"></div>
+    </div>
+
+    <div id="img-sec-om" class="hidden">
+      <label>Image Before O&M <span class="req">*</span></label><input id="f_before" type="file" accept="image/*" capture="environment"><div id="p_before" class="img-box"><img id="i_before"></div>
+      <label>Image After O&M <span class="req">*</span></label><input id="f_after" type="file" accept="image/*" capture="environment"><div id="p_after" class="img-box"><img id="i_after"></div>
+    </div>
 
     <div class="actions">
       <button class="main" id="btnSave">SUBMIT REPORT</button>
@@ -137,20 +193,37 @@
 
 <div id="modal" class="modal-overlay">
   <div class="modal">
-    <h3 id="mTitle">Title</h3><p id="mText">Text</p>
+    <h3 id="mTitle">Title</h3>
+    <div id="mBody"></div>
     <div class="modal-btns"><button id="mOk" class="btn-ok">OK</button></div>
   </div>
 </div>
 
 <script>
   // -------------------------------------------------------------
-  // IMPORTANT: PASTE YOUR GOOGLE DEPLOYMENT URL HERE
+  // UPDATE THIS URL WITH YOUR DEPLOYMENT URL
   const API_URL = "https://script.google.com/macros/s/AKfycbycPr0Ef3R4YRqgwT_jCTz_-3SNIwjyifXCCbzlZtwPEHiKeP9ofFRw9U1AgLiUW7wC/exec"; 
   // -------------------------------------------------------------
 
+  // --- O&M MATERIAL CONFIGURATION ---
+  const MATERIAL_CONFIG = [
+    { id: 1, name: "3-Phase LTCT DT Smart Meter", type: "COUNT" },
+    { id: 2, name: "3-Phase HTCT / Feeder Smart Meter", type: "COUNT" },
+    { id: 3, name: "3-Phase SMC Meter Box", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
+    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
+    { id: 5, name: "Polycarbonate Meter Seal", type: "COUNT" },
+    { id: 6, name: "NIC Card (GPRS / RF)", type: "COUNT" },
+    { id: 7, name: "Gateway / Router / Access Point", type: "COUNT" },
+    { id: 8, name: "Sticker / Label", type: "COUNT" },
+    { id: 9, name: "Others", type: "REMARK_REQ", placeholder: "Specify details..." }
+  ];
+
   let currentUser = null;
+  let currentMode = 'NEW'; // 'NEW' or 'OM'
   let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
-  const imgs = { meter:null, ct:null, dt:null };
+  // Image container
+  const imgs = { meter:null, ct:null, dt:null, before:null, after:null };
+  
   const get = id => document.getElementById(id);
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
   const show = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); get(id).classList.add('active'); window.scrollTo(0,0); };
@@ -164,24 +237,15 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" } 
       });
       return await response.json();
-    } catch (e) {
-      console.error(e);
-      throw new Error("Internet Connection Failed");
-    }
+    } catch (e) { console.error(e); throw new Error("Connection Failed"); }
   }
 
   function initAuth() {
     const s = localStorage.getItem('fv_user');
-    if(s) { currentUser = JSON.parse(s); loadForm(); } else show('view-login');
+    if(s) { currentUser = JSON.parse(s); loadDashboard(); } else show('view-login');
   }
 
-  // --- 1. PASSWORD TOGGLE ---
-  get('togglePass').onclick = () => {
-    const ip=get('loginPass'), ico=get('togglePass');
-    if(ip.type==='password'){ ip.type='text'; ico.textContent='🙈'; } else { ip.type='password'; ico.textContent='👁️'; }
-  };
-
-  // --- 2. LOGIN ---
+  // --- LOGIN LOGIC ---
   get('btnLogin').onclick = () => {
     const c=get('loginCode').value.trim(), p=get('loginPass').value.trim();
     if(!c||!p) return msg('loginMsg','Enter credentials','err');
@@ -192,66 +256,170 @@
         currentUser={empCode:res.empCode, name:res.name}; 
         localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
         msg('loginMsg',''); 
-        loadForm(); 
-      } else {
-        msg('loginMsg', res.message, 'err');
-      }
+        loadDashboard(); 
+      } else msg('loginMsg', res.message, 'err');
     }).catch(e => msg('loginMsg', e.message, 'err'));
   };
 
-  get('btnLogout').onclick = () => { localStorage.removeItem('fv_user'); currentUser=null; resetForm(); show('view-login'); };
-  get('btnToReset').onclick = () => { show('view-reset'); msg('resetMsg',''); };
+  get('btnDLogout').onclick = () => { localStorage.removeItem('fv_user'); currentUser=null; show('view-login'); };
   get('btnBackLogin').onclick = () => show('view-login');
+  get('togglePass').onclick = () => { const ip=get('loginPass'); ip.type = ip.type==='password'?'text':'password'; };
 
-  // --- 3. RESET PASSWORD ---
-  get('btnDoReset').onclick = () => {
-    const c=get('resetCode').value.trim(), o=get('resetOld').value.trim(), n=get('resetNew').value.trim();
-    if(!c||!o||!n) return msg('resetMsg','All fields required','err');
+  // --- DASHBOARD & FORM SETUP ---
+  function loadDashboard() {
+    get('dName').textContent = currentUser.name.split(' ')[0]; get('dCode').textContent = currentUser.empCode;
+    show('view-dashboard');
+    if(get('zone').options.length <= 1) fetchOpts(); // Pre-fetch options
+  }
+
+  window.openForm = (mode) => {
+    currentMode = mode;
+    resetForm();
     
-    msg('resetMsg','Processing...');
-    callApi('changePassword', { empCode: c, oldPass: o, newPass: n }).then(res => {
-      if(res.success) { alert('Password Changed. Please Login.'); show('view-login'); } 
-      else msg('resetMsg', res.message, 'err');
-    }).catch(e => msg('resetMsg', e.message, 'err'));
+    // UI Toggles
+    get('formTitle').textContent = mode === 'NEW' ? 'New Visit' : 'O&M Visit';
+    
+    // Toggle Sections
+    if (mode === 'NEW') {
+      get('sec-mat-req').classList.remove('hidden');
+      get('sec-mat-used').classList.add('hidden');
+      get('img-sec-new').classList.remove('hidden');
+      get('img-sec-om').classList.add('hidden');
+      get('sec-veh').classList.remove('hidden');
+    } else {
+      get('sec-mat-req').classList.add('hidden');
+      get('sec-mat-used').classList.remove('hidden');
+      get('img-sec-new').classList.add('hidden');
+      get('img-sec-om').classList.remove('hidden');
+      get('sec-veh').classList.add('hidden'); // Optional: Hide vehicle for O&M if not needed
+      renderOMTable();
+    }
+    show('view-form');
   };
 
-  function loadForm() {
-    get('dispName').textContent = currentUser.name.split(' ')[0]; get('dispCode').textContent = currentUser.empCode;
-    show('view-form');
-    // Auto-fetch options if dropdown is empty
-    if(get('zone').options.length <= 1) fetchOpts();
+  // --- DUPLICATE CHECK (STRICT) ---
+  get('meterNo').onblur = async function() {
+    const m = this.value.trim();
+    const btn = get('btnSave');
+    get('dupWarning').textContent = '';
+    btn.disabled = false;
+
+    if (m.length < 5) return; // Ignore short inputs
+    if (currentMode !== 'NEW') return; // Only check strict dupes for First Visit
+
+    // Show mini loading
+    get('dupWarning').textContent = 'Checking availability...';
+    get('dupWarning').style.color = 'orange';
+
+    try {
+      const res = await callApi('checkMeter', { meterNo: m });
+      if (res.exists) {
+        const d = res.meta;
+        // Block Submission
+        btn.disabled = true;
+        get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.';
+        get('dupWarning').style.color = 'red';
+        
+        // Show Detailed Modal
+        const html = `
+          <div class="warn-box">
+             <strong>Already Submitted By:</strong><br>
+             Name: ${d.name}<br>
+             Role: ${d.designation}<br>
+             Date: ${d.date}<br>
+             Meter: ${d.meter}
+          </div>
+          <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance. Contact admin if this is an error.</p>
+        `;
+        modal('Duplicate Entry Detected', html);
+      } else {
+        get('dupWarning').textContent = '';
+      }
+    } catch(e) { console.log(e); }
+  };
+
+  // --- O&M MATERIAL TABLE LOGIC ---
+  function renderOMTable() {
+    const tb = get('matTableBody');
+    tb.innerHTML = '';
+    MATERIAL_CONFIG.forEach((item, idx) => {
+      let inputHtml = '';
+      if(item.type === 'COUNT') inputHtml = `<input type="number" class="mat-inp mat-val" placeholder="0" min="0">`;
+      else if(item.type === 'DROPDOWN') inputHtml = `<select class="mat-inp mat-val"><option value="">Select Rating</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else if(item.type === 'REMARK_REQ') inputHtml = `<input type="text" class="mat-inp mat-val" placeholder="${item.placeholder}">`;
+
+      const row = `
+        <tr data-id="${item.id}" data-type="${item.type}" data-name="${item.name}">
+          <td width="30"><input type="checkbox" class="mat-check"></td>
+          <td>
+            <div style="font-weight:600;margin-bottom:4px;">${item.name}</div>
+            <div class="mat-ctrl" style="display:none;">${inputHtml}</div>
+          </td>
+        </tr>
+      `;
+      tb.insertAdjacentHTML('beforeend', row);
+    });
+
+    // Toggle input visibility on checkbox
+    tb.querySelectorAll('.mat-check').forEach(ck => {
+      ck.onchange = (e) => {
+        const ctrl = e.target.closest('tr').querySelector('.mat-ctrl');
+        ctrl.style.display = e.target.checked ? 'block' : 'none';
+      };
+    });
   }
 
-  // --- 4. DROPDOWN LOGIC ---
-  function populate(id, list) {
-    const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join('');
-    el.disabled = !list || !list.length;
+  function getOMData() {
+    const list = [];
+    let err = null;
+    document.querySelectorAll('#matTableBody tr').forEach(tr => {
+      const ck = tr.querySelector('.mat-check');
+      if(ck.checked) {
+        const type = tr.dataset.type;
+        const valEl = tr.querySelector('.mat-val');
+        const val = valEl.value.trim();
+        const name = tr.dataset.name;
+
+        // Validation
+        if(!val || (type==='COUNT' && val<=0)) { err = `Please enter quantity/details for ${name}`; return; }
+        
+        // Structure Object
+        let obj = { name: name, type: type };
+        if(type==='COUNT') obj.count = val;
+        else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
+        else if(type==='REMARK_REQ') { obj.remark = val; obj.count = 1; }
+        
+        list.push(obj);
+      }
+    });
+    if(err) return { error: err };
+    return { data: list };
   }
-  
+
+  // --- EXISTING HELPERS (Dropdowns, Images) ---
   function fetchOpts() {
     callApi('getOptions').then(r => {
       circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair;
       remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
       populate('zone', r.zones); populate('dependency', r.dependencies);
       populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
-    }).catch(e=>{ console.log("Sync bg failed", e) });
+    });
+  }
+  function populate(id, list) {
+    const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join('');
+    el.disabled = !list || !list.length;
   }
   
-  get('btnSync').onclick = () => { msg('formMsg','Syncing...'); fetchOpts(); setTimeout(()=>msg('formMsg',''),1000); };
-
-  // Cascading Events
+  // Cascading
   get('zone').onchange = e => { populate('circle', circlesByZone[e.target.value]); populate('division',[]); };
   get('circle').onchange = e => { populate('division', divisionsByPair[`${get('zone').value}||${e.target.value}`]); };
   get('dependency').onchange = e => { populate('remBucket', remarksByDep[e.target.value]); populate('finBucket',[]); };
   get('remBucket').onchange = e => { populate('finBucket', finalsByPair[`${get('dependency').value}||${e.target.value}`]); };
   
-  // Format Meter No (Upper + Alphanumeric only)
+  // Formatting
   get('meterNo').oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); };
   
-  // Auto-resize Textareas
-  document.querySelectorAll('textarea').forEach(t => t.oninput = function(){this.style.height='auto';this.style.height=this.scrollHeight+'px'});
-
-  // --- 5. IMAGE HANDLING ---
+  // Images
   function handleImg(e, k) {
     const f = e.target.files[0]; if(!f) { imgs[k]=null; get('p_'+k).classList.remove('show'); return; }
     const r = new FileReader();
@@ -259,58 +427,85 @@
       get('i_'+k).src = ev.target.result; get('p_'+k).classList.add('show');
       const i = new Image();
       i.onload = () => {
-        // Compress Image to save data/bandwidth (Max 1000px)
         const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
         c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-        imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1]; // Quality 0.6
+        imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
       }; i.src = ev.target.result;
     }; r.readAsDataURL(f);
   }
-  get('f_meter').onchange = e => handleImg(e,'meter'); get('f_ct').onchange = e => handleImg(e,'ct'); get('f_dt').onchange = e => handleImg(e,'dt');
+  
+  // Assign Image Listeners
+  get('f_meter').onchange = e => handleImg(e,'meter'); 
+  get('f_ct').onchange = e => handleImg(e,'ct'); 
+  get('f_dt').onchange = e => handleImg(e,'dt');
+  get('f_before').onchange = e => handleImg(e,'before');
+  get('f_after').onchange = e => handleImg(e,'after');
 
-  // --- 6. SUBMIT REPORT ---
+  // --- SUBMIT LOGIC ---
   get('btnSave').onclick = () => {
     const val = id => get(id).value.trim();
-    const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), materialRequired:val('matReq'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus'), vehicleRequired:val('vehReq') };
+    const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus') };
     
-    // Front-End Validation
-    if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus || !p.vehicleRequired) return msg('formMsg','Missing selections/inputs','err');
-    if(!p.fieldRemark || !p.materialRequired) return msg('formMsg','Fill Remarks & Material','err');
-    if(!get('remBucket').disabled && !p.remarkBucket) return msg('formMsg','Select Remark Bucket','err');
-    if(!get('finBucket').disabled && !p.finalBucket) return msg('formMsg','Select Final Bucket','err');
-    if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','All 3 photos required','err');
+    // Shared Validation
+    if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus) return msg('formMsg','Missing selections','err');
+    if(!p.fieldRemark) return msg('formMsg','Field Remark is required','err');
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Error','Invalid Meter No format');
 
-    msg('formMsg','Saving Report...');
+    let action = '';
     
-    // Attach Images
-    p.imageBase64_meter = imgs.meter; 
-    p.imageBase64_ct = imgs.ct; 
-    p.imageBase64_dtcable = imgs.dt;
+    // --- MODE SPECIFIC VALIDATION ---
+    if (currentMode === 'NEW') {
+      action = 'submitFinal';
+      p.vehicleRequired = val('vehReq');
+      p.materialRequired = val('matReq');
+      
+      if(!p.materialRequired) return msg('formMsg','Material Req is required','err');
+      if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','3 Photos Required','err');
+      
+      p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
+    
+    } else { // O&M
+      action = 'submitOM';
+      
+      const matRes = getOMData();
+      if(matRes.error) return msg('formMsg', matRes.error, 'err');
+      p.materialData = matRes.data; // Attach JSON Array
+      
+      if(!imgs.before || !imgs.after) return msg('formMsg','Before & After Photos Required','err');
+      
+      p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
+    }
 
-    // Call API (Action: submitFinal)
-    callApi('submitFinal', p).then(res => {
+    // Submit
+    msg('formMsg','Saving Report...');
+    callApi(action, p).then(res => {
       if(res.ok) {
         msg('formMsg',''); 
         resetForm(); 
-        modal('Success', 'Report Saved! Syncing in background.');
-      } else {
-        msg('formMsg', res.message || 'Error', 'err');
-      }
+        show('view-dashboard'); // Go back to selection
+        modal('Success', 'Report Saved Successfully!');
+      } else msg('formMsg', res.message || 'Error', 'err');
     }).catch(e => msg('formMsg', e.message, 'err'));
   };
 
   function resetForm() {
-    ['meterNo','fieldRemark','matReq','f_meter','f_ct','f_dt'].forEach(id=>get(id).value='');
+    ['meterNo','fieldRemark','matReq'].forEach(id=>get(id).value='');
     ['zone','dependency','rectStatus','vehReq'].forEach(id=>get(id).selectedIndex=0);
-    get('zone').dispatchEvent(new Event('change')); get('dependency').dispatchEvent(new Event('change'));
-    ['p_meter','p_ct','p_dt'].forEach(id=>get(id).classList.remove('show')); 
-    imgs.meter=null; imgs.ct=null; imgs.dt=null; 
+    get('zone').dispatchEvent(new Event('change'));
+    
+    // Clear Images
+    document.querySelectorAll('.img-box').forEach(d => d.classList.remove('show'));
+    document.querySelectorAll('input[type="file"]').forEach(i => i.value='');
+    imgs.meter=null; imgs.ct=null; imgs.dt=null; imgs.before=null; imgs.after=null;
+    
+    get('btnSave').disabled = false;
+    get('dupWarning').textContent = '';
     window.scrollTo(0,0);
   }
 
-  function modal(t, tx) { get('mTitle').textContent=t; get('mText').textContent=tx; get('modal').classList.add('open'); }
+  function modal(t, tx) { get('mTitle').textContent=t; get('mBody').innerHTML=tx; get('modal').classList.add('open'); }
   get('mOk').onclick = () => get('modal').classList.remove('open');
+  get('btnToReset').onclick = () => show('view-reset');
 
   initAuth();
 </script>
