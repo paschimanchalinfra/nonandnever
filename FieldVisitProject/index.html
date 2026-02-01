@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.4</title>
+  <title>Field Visit App v2.5</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -48,6 +48,11 @@
     }
     tr.selected { background-color: #e8f0fe; }
     .mat-inp { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    
+    /* Flex Container for Composite Inputs (Dropdown + Count) */
+    .mat-composite { display: flex; gap: 8px; }
+    .mat-composite .mat-inp { flex-grow: 1; }
+    .mat-composite input[type="number"] { width: 90px; } /* Fixed width for count field */
 
     /* Password Eye */
     .pass-wrap { position: relative; width: 100%; }
@@ -231,7 +236,10 @@
     { id: 1, name: "3-Phase LTCT DT Smart Meter", type: "COUNT" },
     { id: 2, name: "3-Phase HTCT / Feeder Smart Meter", type: "COUNT" },
     { id: 3, name: "3-Phase SMC Meter Box", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
-    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
+    
+    // UPDATED: Now requires both Dropdown AND Count
+    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN_PLUS_COUNT", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
+    
     { id: 5, name: "Polycarbonate Meter Seal", type: "COUNT" },
     { id: 6, name: "NIC Card (GPRS / RF)", type: "COUNT" },
     { id: 7, name: "Gateway / Router / Access Point", type: "COUNT" },
@@ -373,7 +381,18 @@
         inputHtml = `<input type="number" class="mat-inp mat-val" placeholder="Qty" min="1">`;
       } else if(item.type === 'DROPDOWN') {
         inputHtml = `<select class="mat-inp mat-val"><option value="">Select Option</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      } 
+      } else if(item.type === 'DROPDOWN_PLUS_COUNT') {
+        // NEW TYPE: Renders both
+        inputHtml = `
+          <div class="mat-composite">
+            <select class="mat-inp mat-val-drop">
+              <option value="">Select Rating</option>${item.options.map(o=>`<option>${o}</option>`).join('')}
+            </select>
+            <input type="number" class="mat-inp mat-val-count" placeholder="Qty" min="1">
+          </div>
+        `;
+      }
+
       const row = `
         <tr data-id="${item.id}" data-type="${item.type}" data-name="${item.name}">
           <td width="40" style="vertical-align: middle; text-align: center;"><input type="checkbox" class="mat-check"></td>
@@ -381,15 +400,18 @@
         </tr>`;
       tb.insertAdjacentHTML('beforeend', row);
     });
+    
     tb.querySelectorAll('.mat-check').forEach(ck => {
       ck.onchange = (e) => {
         const tr = e.target.closest('tr');
         const ctrl = tr.querySelector('.mat-ctrl');
-        const inp = tr.querySelector('.mat-val');
+        const inp = tr.querySelector('.mat-val') || tr.querySelector('.mat-val-drop');
         if (e.target.checked) {
           ctrl.style.display = 'block'; tr.classList.add('selected'); if(inp) inp.focus();
         } else {
-          ctrl.style.display = 'none'; tr.classList.remove('selected'); if(inp) inp.value = ''; 
+          ctrl.style.display = 'none'; tr.classList.remove('selected'); 
+          // Reset logic
+          tr.querySelectorAll('input, select').forEach(el => el.value = '');
         }
       };
     });
@@ -401,13 +423,23 @@
       const ck = tr.querySelector('.mat-check');
       if(ck.checked) {
         const type = tr.dataset.type;
-        const valEl = tr.querySelector('.mat-val');
-        const val = valEl.value.trim();
         const name = tr.dataset.name;
-        if(!val || (type==='COUNT' && val<=0)) { err = `Please complete details for ${name}`; return; }
         let obj = { name: name, type: type };
-        if(type==='COUNT') obj.count = val;
-        else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
+
+        if (type === 'DROPDOWN_PLUS_COUNT') {
+           const rating = tr.querySelector('.mat-val-drop').value;
+           const count = tr.querySelector('.mat-val-count').value;
+           if (!rating || !count || count <= 0) { err = `Please select Rating AND Count for ${name}`; return; }
+           obj.rating = rating;
+           obj.count = count;
+        } else {
+           const valEl = tr.querySelector('.mat-val');
+           const val = valEl.value.trim();
+           if(!val || (type==='COUNT' && val<=0)) { err = `Please complete details for ${name}`; return; }
+           
+           if(type==='COUNT') obj.count = val;
+           else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
+        }
         list.push(obj);
       }
     });
