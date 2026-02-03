@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.5</title>
+  <title>Field Visit App v2.6</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -61,8 +61,8 @@
 
     /* Buttons */
     .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
-    button.main { background: var(--primary); color: #fff; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-    button.main:disabled { background: #ccc; cursor: not-allowed; }
+    button.main { background: var(--primary); color: #fff; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: opacity 0.2s; }
+    button.main:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
     button.link { background: none; border: none; color: #5f6368; text-decoration: underline; cursor: pointer; padding: 10px; }
     
     /* Images */
@@ -490,7 +490,25 @@
   get('f_before').onchange = e => handleImg(e,'before');
   get('f_after').onchange = e => handleImg(e,'after');
 
+  // --- NEW: Helper to manage Button State ---
+  const setLoading = (busy) => {
+    const btn = get('btnSave');
+    if (busy) {
+      btn.disabled = true;
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = 'Processing...';
+      btn.style.opacity = '0.7';
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'SUBMIT REPORT';
+      btn.style.opacity = '1';
+    }
+  };
+
   get('btnSave').onclick = async () => {
+    // PREVENT MULTIPLE CLICKS
+    if (get('btnSave').disabled) return;
+
     const val = id => get(id).value.trim();
     const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus') };
     
@@ -500,24 +518,28 @@
 
     let action = '';
     
+    // START LOADING STATE
+    setLoading(true);
+
     if (currentMode === 'NEW') {
       action = 'submitFinal';
       p.vehicleRequired = val('vehReq');
       p.materialRequired = val('matReq');
-      if(!p.materialRequired) return msg('formMsg','Material Req is required','err');
-      if(!imgs.meter || !imgs.ct || !imgs.dt) return msg('formMsg','3 Photos Required','err');
+      if(!p.materialRequired) { setLoading(false); return msg('formMsg','Material Req is required','err'); }
+      if(!imgs.meter || !imgs.ct || !imgs.dt) { setLoading(false); return msg('formMsg','3 Photos Required','err'); }
       p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
+      
       submitPayload(action, p);
     
     } else { 
       action = 'submitOM';
       
       const matRes = getOMData();
-      if(matRes.error) return msg('formMsg', matRes.error, 'err');
-      if(matRes.data.length === 0) return modal('Validation Error', 'You must select at least one material used.');
+      if(matRes.error) { setLoading(false); return msg('formMsg', matRes.error, 'err'); }
+      if(matRes.data.length === 0) { setLoading(false); return modal('Validation Error', 'You must select at least one material used.'); }
       p.materialData = matRes.data; 
       
-      if(!imgs.before || !imgs.after) return msg('formMsg','Before & After Photos Required','err');
+      if(!imgs.before || !imgs.after) { setLoading(false); return msg('formMsg','Before & After Photos Required','err'); }
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
 
       msg('formMsg', 'Checking history...');
@@ -533,12 +555,21 @@
             </div>
             <p style="font-weight:600; margin-top:10px;">This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}th</span> Visit.</p>
             <p>Please confirm submission.</p>`;
-          modal('Repeat Visit Confirmation', html, true, () => { submitPayload(action, p); });
+          
+          modal('Repeat Visit Confirmation', html, true, () => { 
+             submitPayload(action, p); 
+          }, () => {
+             // ON CANCEL
+             setLoading(false);
+          });
           msg('formMsg', ''); 
         } else {
           submitPayload(action, p);
         }
-      } catch (e) { msg('formMsg', 'Error checking history: ' + e.message, 'err'); }
+      } catch (e) { 
+        setLoading(false);
+        msg('formMsg', 'Error checking history: ' + e.message, 'err'); 
+      }
     }
   };
 
@@ -548,8 +579,14 @@
       if(res.ok) {
         msg('formMsg',''); resetForm(); show('view-dashboard');
         modal('Success', 'Report Saved Successfully!');
-      } else msg('formMsg', res.message || 'Error', 'err');
-    }).catch(e => msg('formMsg', e.message, 'err'));
+      } else {
+        setLoading(false);
+        msg('formMsg', res.message || 'Error', 'err');
+      }
+    }).catch(e => {
+      setLoading(false);
+      msg('formMsg', e.message, 'err');
+    });
   }
 
   function resetForm() {
@@ -561,7 +598,8 @@
     document.querySelectorAll('input[type="file"]').forEach(i => i.value='');
     imgs.meter=null; imgs.ct=null; imgs.dt=null; imgs.before=null; imgs.after=null;
     
-    get('btnSave').disabled = false;
+    // FULL RESET BUTTON STATE
+    setLoading(false);
     get('dupWarning').textContent = '';
     
     // Re-lock
@@ -569,14 +607,22 @@
     window.scrollTo(0,0);
   }
 
-  function modal(t, tx, showCancel=false, onConfirm=null) { 
+  function modal(t, tx, showCancel=false, onConfirm=null, onCancel=null) { 
     get('mTitle').textContent=t; get('mBody').innerHTML=tx; 
     const btnCancel = get('mCancel'); const btnOk = get('mOk');
     if(showCancel) {
       btnCancel.style.display = 'inline-block';
-      btnCancel.onclick = () => get('modal').classList.remove('open');
+      
+      btnCancel.onclick = () => { 
+        get('modal').classList.remove('open'); 
+        if(onCancel) onCancel(); 
+      };
+      
       btnOk.textContent = 'CONFIRM & SUBMIT';
-      btnOk.onclick = () => { get('modal').classList.remove('open'); if(onConfirm) onConfirm(); };
+      btnOk.onclick = () => { 
+        get('modal').classList.remove('open'); 
+        if(onConfirm) onConfirm(); 
+      };
     } else {
       btnCancel.style.display = 'none'; btnOk.textContent = 'OK';
       btnOk.onclick = () => get('modal').classList.remove('open');
