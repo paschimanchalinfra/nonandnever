@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.6</title>
+  <title>Field Visit App v2.7</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -52,7 +52,7 @@
     /* Flex Container for Composite Inputs (Dropdown + Count) */
     .mat-composite { display: flex; gap: 8px; }
     .mat-composite .mat-inp { flex-grow: 1; }
-    .mat-composite input[type="number"] { width: 90px; } /* Fixed width for count field */
+    .mat-composite input[type="number"] { width: 90px; } 
 
     /* Password Eye */
     .pass-wrap { position: relative; width: 100%; }
@@ -196,6 +196,15 @@
 
         <label>Rectification Status <span class="req">*</span></label><select id="rectStatus"><option value="">Select</option></select>
         
+        <div id="sec-vehicle-om" class="hidden">
+          <label>Vehicle use while O&M <span class="req">*</span></label>
+          <select id="vehicleOM">
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+
         <div id="sec-veh">
           <label>Vehicle Required <span class="req">*</span></label><select id="vehReq"><option value="">Select</option></select>
         </div>
@@ -233,12 +242,16 @@
   // -------------------------------------------------------------
 
   const MATERIAL_CONFIG = [
-    { id: 1, name: "3-Phase LTCT DT Smart Meter", type: "COUNT" },
-    { id: 2, name: "3-Phase HTCT / Feeder Smart Meter", type: "COUNT" },
+    // UPDATED: Consolidated Smart Meter
+    { id: 1, name: "3-Phase Smart Meter Installed", type: "DROPDOWN", options: ["Yes", "No"] },
+    
     { id: 3, name: "3-Phase SMC Meter Box", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
     
-    // UPDATED: Now requires both Dropdown AND Count
-    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN_PLUS_COUNT", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
+    // UPDATED: CT with Dropdown Quantity (1,2,3,4)
+    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN_PLUS_DROPDOWN_COUNT", 
+      options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"],
+      countOptions: ["1", "2", "3", "4"] 
+    },
     
     { id: 5, name: "Polycarbonate Meter Seal", type: "COUNT" },
     { id: 6, name: "NIC Card (GPRS / RF)", type: "COUNT" },
@@ -310,7 +323,8 @@
       get('img-sec-new').classList.remove('hidden');
       get('img-sec-om-before').classList.add('hidden');
       get('img-sec-om-after').classList.add('hidden');
-      get('sec-veh').classList.remove('hidden');
+      get('sec-vehicle-om').classList.add('hidden'); // Hide O&M Vehicle
+      get('sec-veh').classList.remove('hidden'); // Show New Visit Vehicle
       
       // Unlock immediately for New Visit
       locker.classList.add('unlocked');
@@ -323,17 +337,17 @@
       get('sec-mat-used').classList.remove('hidden');
       get('img-sec-new').classList.add('hidden');
       
-      // Show Before Image Input (Trigger for unlock)
       get('img-sec-om-before').classList.remove('hidden');
-      get('img-sec-om-after').classList.remove('hidden'); // It's inside locker, so it's hidden by opacity/pointer events
-      get('sec-veh').classList.add('hidden');
+      get('img-sec-om-after').classList.remove('hidden'); 
+      
+      get('sec-vehicle-om').classList.remove('hidden'); // Show O&M Vehicle
+      get('sec-veh').classList.add('hidden'); // Hide New Visit Vehicle
       
       renderOMTable();
     }
     show('view-form');
   };
 
-  // --- UNLOCK LOGIC FOR O&M ---
   function unlockOMFlow() {
     if(currentMode === 'OM') {
       get('om-flow-locked').classList.add('unlocked');
@@ -381,14 +395,16 @@
         inputHtml = `<input type="number" class="mat-inp mat-val" placeholder="Qty" min="1">`;
       } else if(item.type === 'DROPDOWN') {
         inputHtml = `<select class="mat-inp mat-val"><option value="">Select Option</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      } else if(item.type === 'DROPDOWN_PLUS_COUNT') {
-        // NEW TYPE: Renders both
+      } else if(item.type === 'DROPDOWN_PLUS_DROPDOWN_COUNT') {
+        // NEW TYPE: Renders Dropdown Rating + Dropdown Count
         inputHtml = `
           <div class="mat-composite">
             <select class="mat-inp mat-val-drop">
               <option value="">Select Rating</option>${item.options.map(o=>`<option>${o}</option>`).join('')}
             </select>
-            <input type="number" class="mat-inp mat-val-count" placeholder="Qty" min="1">
+            <select class="mat-inp mat-val-count" style="width:90px;">
+              <option value="">Qty</option>${item.countOptions.map(o=>`<option>${o}</option>`).join('')}
+            </select>
           </div>
         `;
       }
@@ -401,6 +417,7 @@
       tb.insertAdjacentHTML('beforeend', row);
     });
     
+    // Add Listeners
     tb.querySelectorAll('.mat-check').forEach(ck => {
       ck.onchange = (e) => {
         const tr = e.target.closest('tr');
@@ -410,10 +427,47 @@
           ctrl.style.display = 'block'; tr.classList.add('selected'); if(inp) inp.focus();
         } else {
           ctrl.style.display = 'none'; tr.classList.remove('selected'); 
-          // Reset logic
           tr.querySelectorAll('input, select').forEach(el => el.value = '');
         }
+        
+        // AUTO-LOGIC TRIGGER: If SMC Box is changed
+        const name = tr.dataset.name;
+        if(name === "3-Phase SMC Meter Box") {
+          handleSMCLogic(e.target.checked);
+        }
       };
+    });
+  }
+
+  // --- AUTOMATED DEPENDENCY LOGIC ---
+  function handleSMCLogic(isChecked) {
+    if (!isChecked) return; // Only apply logic on selection
+
+    const rows = document.querySelectorAll('#matTableBody tr');
+    
+    // 1. Find and Set Smart Meter Installed to YES
+    rows.forEach(tr => {
+      if(tr.dataset.name === "3-Phase Smart Meter Installed") {
+        const ck = tr.querySelector('.mat-check');
+        if(!ck.checked) {
+          ck.checked = true;
+          ck.dispatchEvent(new Event('change')); // Trigger visibility
+        }
+        tr.querySelector('.mat-val').value = "Yes";
+      }
+    });
+
+    // 2. Find and Set CT Qty to 4
+    rows.forEach(tr => {
+      if(tr.dataset.name === "Resin Type Current Transformer (CT)") {
+        const ck = tr.querySelector('.mat-check');
+        if(!ck.checked) {
+          ck.checked = true;
+          ck.dispatchEvent(new Event('change'));
+        }
+        tr.querySelector('.mat-val-count').value = "4";
+        // Optional: Force Rating if needed, otherwise user selects rating
+      }
     });
   }
 
@@ -426,10 +480,10 @@
         const name = tr.dataset.name;
         let obj = { name: name, type: type };
 
-        if (type === 'DROPDOWN_PLUS_COUNT') {
+        if (type === 'DROPDOWN_PLUS_DROPDOWN_COUNT') {
            const rating = tr.querySelector('.mat-val-drop').value;
            const count = tr.querySelector('.mat-val-count').value;
-           if (!rating || !count || count <= 0) { err = `Please select Rating AND Count for ${name}`; return; }
+           if (!rating || !count) { err = `Please select Rating AND Count for ${name}`; return; }
            obj.rating = rating;
            obj.count = count;
         } else {
@@ -490,12 +544,10 @@
   get('f_before').onchange = e => handleImg(e,'before');
   get('f_after').onchange = e => handleImg(e,'after');
 
-  // --- NEW: Helper to manage Button State ---
   const setLoading = (busy) => {
     const btn = get('btnSave');
     if (busy) {
       btn.disabled = true;
-      btn.dataset.originalText = btn.textContent;
       btn.textContent = 'Processing...';
       btn.style.opacity = '0.7';
     } else {
@@ -506,7 +558,6 @@
   };
 
   get('btnSave').onclick = async () => {
-    // PREVENT MULTIPLE CLICKS
     if (get('btnSave').disabled) return;
 
     const val = id => get(id).value.trim();
@@ -518,7 +569,6 @@
 
     let action = '';
     
-    // START LOADING STATE
     setLoading(true);
 
     if (currentMode === 'NEW') {
@@ -539,6 +589,10 @@
       if(matRes.data.length === 0) { setLoading(false); return modal('Validation Error', 'You must select at least one material used.'); }
       p.materialData = matRes.data; 
       
+      // O&M Vehicle Field Capture
+      p.vehicleOM = val('vehicleOM');
+      if(!p.vehicleOM) { setLoading(false); return msg('formMsg', 'Please select Vehicle use while O&M', 'err'); }
+
       if(!imgs.before || !imgs.after) { setLoading(false); return msg('formMsg','Before & After Photos Required','err'); }
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
 
@@ -559,7 +613,6 @@
           modal('Repeat Visit Confirmation', html, true, () => { 
              submitPayload(action, p); 
           }, () => {
-             // ON CANCEL
              setLoading(false);
           });
           msg('formMsg', ''); 
@@ -591,18 +644,16 @@
 
   function resetForm() {
     ['meterNo','fieldRemark','matReq'].forEach(id=>get(id).value='');
-    ['zone','dependency','rectStatus','vehReq'].forEach(id=>get(id).selectedIndex=0);
+    ['zone','dependency','rectStatus','vehReq','vehicleOM'].forEach(id=>get(id).selectedIndex=0);
     get('zone').dispatchEvent(new Event('change'));
     
     document.querySelectorAll('.img-box').forEach(d => d.classList.remove('show'));
     document.querySelectorAll('input[type="file"]').forEach(i => i.value='');
     imgs.meter=null; imgs.ct=null; imgs.dt=null; imgs.before=null; imgs.after=null;
     
-    // FULL RESET BUTTON STATE
     setLoading(false);
     get('dupWarning').textContent = '';
     
-    // Re-lock
     get('om-flow-locked').classList.remove('unlocked');
     window.scrollTo(0,0);
   }
