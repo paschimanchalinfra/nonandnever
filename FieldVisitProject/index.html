@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v2.9</title>
+  <title>Field Visit App v3.0</title>
   <style>
     /* --- CSS STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -38,18 +38,12 @@
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
-    /* --- CSS FOR O&M VISIBILITY --- */
+    /* Tables & Materials */
     .mat-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .mat-table td { padding: 12px 8px; border-bottom: 1px solid #ddd; vertical-align: middle; }
-    
-    .mat-check { 
-      width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); 
-      transform: scale(1.1); margin-right: 10px;
-    }
+    .mat-check { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); transform: scale(1.1); margin-right: 10px; }
     tr.selected { background-color: #e8f0fe; }
     .mat-inp { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
-    
-    /* Flex Container for Composite Inputs (Dropdown + Count) */
     .mat-composite { display: flex; gap: 8px; }
     .mat-composite .mat-inp { flex-grow: 1; }
     .mat-composite input[type="number"] { width: 90px; } 
@@ -85,12 +79,22 @@
     .btn-ok { background: var(--primary); color: #fff; }
     .btn-cancel { background: #f0f0f0; color: #333; border: 1px solid #ccc; }
     
-    /* Conditional Sections */
     .hidden { display: none !important; }
-    
-    /* LOCKED SECTION for O&M Flow */
     #om-flow-locked { opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
     #om-flow-locked.unlocked { opacity: 1; pointer-events: auto; }
+
+    /* Admin Table Styles */
+    .admin-container { overflow-x: auto; margin-top: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .admin-table th, .admin-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
+    .admin-table th { background: #f8f9fa; font-weight: 700; color: var(--primary); position: sticky; top: 0; z-index: 10; }
+    .btn-small { padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; }
+    .btn-reset { background: #fff3e0; color: #e65100; border-color: #ffe0b2; }
+    .toggle-status { padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; text-align: center; border:none; width: 70px; }
+    .st-active { background: #e6f4ea; color: #137333; }
+    .st-inactive { background: #fce8e6; color: #c5221f; }
+    .role-select { padding: 4px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; width: 80px;}
+    .admin-tools { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
   </style>
 </head>
 <body>
@@ -113,7 +117,7 @@
   </div>
 
   <div id="view-reset" class="view-section">
-    <div style="margin: 30px 0;"><h1>Reset Password</h1></div>
+    <div style="margin: 30px 0;"><h1>Change Password</h1></div>
     <label>Emp Code</label><input id="resetCode" type="text">
     <label>Old Password</label><input id="resetOld" type="password">
     <label>New Password</label><input id="resetNew" type="password">
@@ -129,11 +133,15 @@
       <div class="brand">📋 Field Visit</div>
       <div style="display:flex;align-items:center;">
         <div class="user-info"><div id="dName" style="font-weight:700;">User</div><div id="dCode">ID</div></div>
-        <button id="btnDLogout" class="btn-logout">Logout</button>
+        <button class="btn-logout" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <div style="margin-top: 40px;">
+    <div id="switchToAdminBtn" style="display:none; text-align:right; margin-bottom:10px;">
+        <button class="btn-small" onclick="loadAdminPanel()">⚙️ Go to Admin Panel</button>
+    </div>
+
+    <div style="margin-top: 20px;">
       <div class="dash-btn" onclick="openForm('NEW')">
         <h3>✨ First Time Visit</h3>
         <p>New installation report. Checks for duplicates.</p>
@@ -143,6 +151,42 @@
         <h3>🛠️ O&M Visit</h3>
         <p>Maintenance, Rectification & Material Usage.</p>
       </div>
+    </div>
+  </div>
+
+  <div id="view-admin" class="view-section" style="max-width: 800px; margin: 0 auto; width:100%;">
+    <div class="app-header">
+      <div class="brand">🛡️ Admin Control</div>
+      <div style="display:flex;align-items:center;">
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </div>
+    
+    <div class="admin-tools">
+      <h3 style="margin:0; color:var(--primary);">User Management</h3>
+      <div>
+        <button class="btn-small" onclick="loadAdminPanel()">🔄 Refresh</button>
+        <button class="btn-small" onclick="show('view-dashboard')" style="background:#e8f0fe; border-color:#d2e3fc; color:#1a73e8;">📝 Fill Visit Form</button>
+      </div>
+    </div>
+    
+    <div id="adminMsg" class="msg" style="margin: 0 0 10px 0; text-align:left; font-size:13px;"></div>
+
+    <div class="admin-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Emp Code</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody">
+          <tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
@@ -186,8 +230,7 @@
 
         <div id="sec-mat-used" class="hidden">
            <div class="sec-title">Material Used</div>
-           <table class="mat-table" id="matTableBody">
-             </table>
+           <table class="mat-table" id="matTableBody"></table>
         </div>
 
         <label>Dependency <span class="req">*</span></label><select id="dependency"><option value="">Select</option></select>
@@ -199,9 +242,7 @@
         <div id="sec-vehicle-om" class="hidden">
           <label>Vehicle use while O&M <span class="req">*</span></label>
           <select id="vehicleOM">
-            <option value="">Select</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
+            <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
           </select>
         </div>
 
@@ -242,17 +283,9 @@
   // -------------------------------------------------------------
 
   const MATERIAL_CONFIG = [
-    // UPDATED: Consolidated Smart Meter
     { id: 1, name: "3-Phase Smart Meter Installed", type: "DROPDOWN", options: ["Yes", "No"] },
-    
     { id: 3, name: "3-Phase SMC Meter Box", type: "DROPDOWN", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"] },
-    
-    // UPDATED: CT with Dropdown Quantity (1,2,3,4)
-    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN_PLUS_DROPDOWN_COUNT", 
-      options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"],
-      countOptions: ["1", "2", "3", "4"] 
-    },
-    
+    { id: 4, name: "Resin Type Current Transformer (CT)", type: "DROPDOWN_PLUS_DROPDOWN_COUNT", options: ["50/5A", "100/5A", "200/5A", "400/5A", "600/5A", "800/5A", "1000/5A"], countOptions: ["1", "2", "3", "4"] },
     { id: 5, name: "Polycarbonate Meter Seal", type: "COUNT" },
     { id: 6, name: "NIC Card (GPRS / RF)", type: "COUNT" },
     { id: 7, name: "Gateway / Router / Access Point", type: "COUNT" },
@@ -272,18 +305,28 @@
   async function callApi(action, data = {}) {
     try {
       const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: action, data: data }),
-        headers: { "Content-Type": "text/plain;charset=utf-8" } 
+        method: "POST", body: JSON.stringify({ action: action, data: data }), headers: { "Content-Type": "text/plain;charset=utf-8" } 
       });
       return await response.json();
-    } catch (e) { console.error(e); throw new Error("Connection Failed"); }
+    } catch (e) { throw new Error("Connection Failed"); }
   }
 
   function initAuth() {
     const s = localStorage.getItem('fv_user');
-    if(s) { currentUser = JSON.parse(s); loadDashboard(); } else show('view-login');
+    if(s) { 
+      currentUser = JSON.parse(s); 
+      // RBAC Routing
+      if(currentUser.role && currentUser.role.toLowerCase() === 'admin') {
+        loadAdminPanel();
+      } else {
+        loadDashboard(); 
+      }
+    } else {
+      show('view-login');
+    }
   }
+
+  function logout() { localStorage.removeItem('fv_user'); currentUser=null; show('view-login'); }
 
   get('btnLogin').onclick = () => {
     const c=get('loginCode').value.trim(), p=get('loginPass').value.trim();
@@ -291,99 +334,153 @@
     msg('loginMsg','Verifying...');
     callApi('login', { empCode: c, password: p }).then(res => {
       if(res.success) { 
-        currentUser={empCode:res.empCode, name:res.name}; 
+        currentUser={empCode:res.empCode, name:res.name, role:res.role}; 
         localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
-        msg('loginMsg',''); loadDashboard(); 
+        msg('loginMsg',''); 
+        
+        if(currentUser.role.toLowerCase() === 'admin') loadAdminPanel();
+        else loadDashboard(); 
       } else msg('loginMsg', res.message, 'err');
     }).catch(e => msg('loginMsg', e.message, 'err'));
   };
 
-  get('btnDLogout').onclick = () => { localStorage.removeItem('fv_user'); currentUser=null; show('view-login'); };
+  get('btnDoReset').onclick = () => {
+    const c=get('resetCode').value.trim(), o=get('resetOld').value.trim(), n=get('resetNew').value.trim();
+    if(!c||!o||!n) return msg('resetMsg','All fields required','err');
+    msg('resetMsg','Updating...');
+    callApi('changePassword', { empCode: c, oldPass: o, newPass: n }).then(res => {
+       if(res.success) msg('resetMsg','Password Updated Successfully!','ok');
+       else msg('resetMsg', res.message, 'err');
+    }).catch(e=>msg('resetMsg', e.message, 'err'));
+  }
+
   get('btnBackLogin').onclick = () => show('view-login');
   get('togglePass').onclick = () => { const ip=get('loginPass'); ip.type = ip.type==='password'?'text':'password'; };
 
   function loadDashboard() {
     get('dName').textContent = currentUser.name.split(' ')[0]; get('dCode').textContent = currentUser.empCode;
+    
+    // Show Admin switch button if Admin
+    if(currentUser.role && currentUser.role.toLowerCase() === 'admin') {
+       get('switchToAdminBtn').style.display = 'block';
+    } else {
+       get('switchToAdminBtn').style.display = 'none';
+    }
+    
     show('view-dashboard');
     if(get('zone').options.length <= 1) fetchOpts(); 
   }
+
+  /* --- ADMIN PANEL LOGIC --- */
+  function loadAdminPanel() {
+    show('view-admin');
+    get('adminMsg').textContent = 'Fetching users...';
+    get('adminMsg').className = 'msg';
+    
+    callApi('getAllUsers', { adminCode: currentUser.empCode }).then(res => {
+      if(res.success) {
+        renderAdminTable(res.users);
+        msg('adminMsg','');
+      } else { msg('adminMsg', res.message, 'err'); }
+    }).catch(e => msg('adminMsg', e.message, 'err'));
+  }
+
+  function renderAdminTable(users) {
+    const tbody = get('adminTableBody');
+    tbody.innerHTML = '';
+    users.forEach(u => {
+      const isActive = u.status.toLowerCase() === 'active';
+      const statusClass = isActive ? 'st-active' : 'st-inactive';
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:600;">${u.name}<br><span style="font-weight:normal;color:#666;font-size:11px;">${u.designation}</span></td>
+        <td>${u.empCode}</td>
+        <td>
+          <select class="role-select" onchange="changeUserRole('${u.empCode}', this.value)">
+            <option value="Admin" ${u.role.toLowerCase()==='admin'?'selected':''}>Admin</option>
+            <option value="User" ${u.role.toLowerCase()==='user'?'selected':''}>User</option>
+          </select>
+        </td>
+        <td>
+          <button class="toggle-status ${statusClass}" onclick="toggleUserStatus('${u.empCode}', '${u.status}', this)">
+            ${u.status}
+          </button>
+        </td>
+        <td>
+          <button class="btn-small btn-reset" onclick="resetUserPass('${u.empCode}', '${u.name}')">Reset Pass</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  window.toggleUserStatus = function(empCode, currentStatus, btnElement) {
+    const newStatus = currentStatus.toLowerCase() === 'active' ? 'Inactive' : 'Active';
+    btnElement.textContent = '...';
+    callApi('updateUserStatus', { adminCode: currentUser.empCode, empCode: empCode, status: newStatus }).then(res => {
+      if(res.success) {
+        btnElement.textContent = newStatus;
+        btnElement.className = `toggle-status ${newStatus==='Active'?'st-active':'st-inactive'}`;
+        btnElement.setAttribute('onclick', `toggleUserStatus('${empCode}', '${newStatus}', this)`);
+      } else { alert("Failed: " + res.message); btnElement.textContent = currentStatus; }
+    }).catch(e => { alert(e.message); btnElement.textContent = currentStatus; });
+  }
+
+  window.changeUserRole = function(empCode, newRole) {
+    callApi('updateUserRole', { adminCode: currentUser.empCode, empCode: empCode, role: newRole }).then(res => {
+      if(!res.success) alert("Failed to update role: " + res.message);
+    }).catch(e => alert(e.message));
+  }
+
+  window.resetUserPass = function(empCode, name) {
+    if(!confirm(`Are you sure you want to reset password for ${name} to "Pass@123"?`)) return;
+    callApi('adminResetPassword', { adminCode: currentUser.empCode, empCode: empCode }).then(res => {
+      if(res.success) alert(`Password for ${name} reset to Pass@123 successfully.`);
+      else alert("Failed: " + res.message);
+    }).catch(e => alert(e.message));
+  }
+  /* --- END ADMIN PANEL LOGIC --- */
+
 
   window.openForm = (mode) => {
     currentMode = mode;
     resetForm();
     get('formTitle').textContent = mode === 'NEW' ? 'New Visit' : 'O&M Visit';
-    
-    // Default: Unlock everything
     const locker = get('om-flow-locked');
-    locker.classList.remove('unlocked'); // Reset state
+    locker.classList.remove('unlocked');
     
     if (mode === 'NEW') {
-      get('sec-mat-req').classList.remove('hidden');
-      get('sec-mat-used').classList.add('hidden');
-      get('img-sec-new').classList.remove('hidden');
-      get('img-sec-om-before').classList.add('hidden');
-      get('img-sec-om-after').classList.add('hidden');
-      get('sec-vehicle-om').classList.add('hidden'); // Hide O&M Vehicle
-      get('sec-veh').classList.remove('hidden'); // Show New Visit Vehicle
-      
-      // Unlock immediately for New Visit
+      get('sec-mat-req').classList.remove('hidden'); get('sec-mat-used').classList.add('hidden');
+      get('img-sec-new').classList.remove('hidden'); get('img-sec-om-before').classList.add('hidden'); get('img-sec-om-after').classList.add('hidden');
+      get('sec-vehicle-om').classList.add('hidden'); get('sec-veh').classList.remove('hidden'); 
       locker.classList.add('unlocked');
-      
     } else {
-      // O&M: Lock everything initially
       locker.classList.remove('unlocked');
-      
-      get('sec-mat-req').classList.add('hidden');
-      get('sec-mat-used').classList.remove('hidden');
-      get('img-sec-new').classList.add('hidden');
-      
-      get('img-sec-om-before').classList.remove('hidden');
-      get('img-sec-om-after').classList.remove('hidden'); 
-      
-      get('sec-vehicle-om').classList.remove('hidden'); // Show O&M Vehicle
-      get('sec-veh').classList.add('hidden'); // Hide New Visit Vehicle
-      
+      get('sec-mat-req').classList.add('hidden'); get('sec-mat-used').classList.remove('hidden');
+      get('img-sec-new').classList.add('hidden'); get('img-sec-om-before').classList.remove('hidden'); get('img-sec-om-after').classList.remove('hidden'); 
+      get('sec-vehicle-om').classList.remove('hidden'); get('sec-veh').classList.add('hidden'); 
       renderOMTable();
     }
     show('view-form');
   };
 
-  function unlockOMFlow() {
-    if(currentMode === 'OM') {
-      get('om-flow-locked').classList.add('unlocked');
-    }
-  }
+  function unlockOMFlow() { if(currentMode === 'OM') get('om-flow-locked').classList.add('unlocked'); }
 
   get('meterNo').onblur = async function() {
-    const m = this.value.trim();
-    const btn = get('btnSave');
-    get('dupWarning').textContent = '';
-    btn.disabled = false;
-
+    const m = this.value.trim(); const btn = get('btnSave'); get('dupWarning').textContent = ''; btn.disabled = false;
     if (m.length < 5) return; 
-    
     if (currentMode === 'NEW') {
-      get('dupWarning').textContent = 'Checking availability...';
-      get('dupWarning').style.color = 'orange';
+      get('dupWarning').textContent = 'Checking availability...'; get('dupWarning').style.color = 'orange';
       try {
         const res = await callApi('checkMeter', { meterNo: m });
         if (res.exists) {
-          const d = res.meta;
-          btn.disabled = true;
-          get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.';
-          get('dupWarning').style.color = 'red';
-          const html = `
-            <div class="warn-box">
-               <strong>Already Submitted By:</strong><br>
-               Name: ${d.name}<br>Role: ${d.designation}<br>
-               <span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>
-               Date: ${d.date}<br>Meter: ${d.meter}
-            </div>
-            <p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance.</p>
-          `;
+          const d = res.meta; btn.disabled = true;
+          get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.'; get('dupWarning').style.color = 'red';
+          const html = `<div class="warn-box"><strong>Already Submitted By:</strong><br>Name: ${d.name}<br>Role: ${d.designation}<br><span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>Date: ${d.date}<br>Meter: ${d.meter}</div><p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance.</p>`;
           modal('Duplicate Entry Detected', html);
         } else { get('dupWarning').textContent = ''; }
-      } catch(e) { console.log(e); }
+      } catch(e) {}
     }
   };
 
@@ -391,82 +488,39 @@
     const tb = get('matTableBody'); tb.innerHTML = '';
     MATERIAL_CONFIG.forEach((item, idx) => {
       let inputHtml = '';
-      if(item.type === 'COUNT') {
-        inputHtml = `<input type="number" class="mat-inp mat-val" placeholder="Qty" min="1">`;
-      } else if(item.type === 'DROPDOWN') {
-        inputHtml = `<select class="mat-inp mat-val"><option value="">Select Option</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
-      } else if(item.type === 'DROPDOWN_PLUS_DROPDOWN_COUNT') {
-        // NEW TYPE: Renders Dropdown Rating + Dropdown Count
-        inputHtml = `
-          <div class="mat-composite">
-            <select class="mat-inp mat-val-drop">
-              <option value="">Select Rating</option>${item.options.map(o=>`<option>${o}</option>`).join('')}
-            </select>
-            <select class="mat-inp mat-val-count" style="width:90px;">
-              <option value="">Qty</option>${item.countOptions.map(o=>`<option>${o}</option>`).join('')}
-            </select>
-          </div>
-        `;
-      }
+      if(item.type === 'COUNT') inputHtml = `<input type="number" class="mat-inp mat-val" placeholder="Qty" min="1">`;
+      else if(item.type === 'DROPDOWN') inputHtml = `<select class="mat-inp mat-val"><option value="">Select Option</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select>`;
+      else if(item.type === 'DROPDOWN_PLUS_DROPDOWN_COUNT') inputHtml = `<div class="mat-composite"><select class="mat-inp mat-val-drop"><option value="">Select Rating</option>${item.options.map(o=>`<option>${o}</option>`).join('')}</select><select class="mat-inp mat-val-count" style="width:90px;"><option value="">Qty</option>${item.countOptions.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
 
-      const row = `
-        <tr data-id="${item.id}" data-type="${item.type}" data-name="${item.name}">
-          <td width="40" style="vertical-align: middle; text-align: center;"><input type="checkbox" class="mat-check"></td>
-          <td><div style="font-weight:600;margin-bottom:6px;">${item.name}</div><div class="mat-ctrl" style="display:none;">${inputHtml}</div></td>
-        </tr>`;
+      const row = `<tr data-id="${item.id}" data-type="${item.type}" data-name="${item.name}"><td width="40" style="vertical-align: middle; text-align: center;"><input type="checkbox" class="mat-check"></td><td><div style="font-weight:600;margin-bottom:6px;">${item.name}</div><div class="mat-ctrl" style="display:none;">${inputHtml}</div></td></tr>`;
       tb.insertAdjacentHTML('beforeend', row);
     });
     
-    // Add Listeners
     tb.querySelectorAll('.mat-check').forEach(ck => {
       ck.onchange = (e) => {
-        const tr = e.target.closest('tr');
-        const ctrl = tr.querySelector('.mat-ctrl');
-        const inp = tr.querySelector('.mat-val') || tr.querySelector('.mat-val-drop');
-        if (e.target.checked) {
-          ctrl.style.display = 'block'; tr.classList.add('selected'); if(inp) inp.focus();
-        } else {
-          ctrl.style.display = 'none'; tr.classList.remove('selected'); 
-          tr.querySelectorAll('input, select').forEach(el => el.value = '');
-        }
-        
-        // AUTO-LOGIC TRIGGER: If SMC Box is changed
-        const name = tr.dataset.name;
-        if(name === "3-Phase SMC Meter Box") {
-          handleSMCLogic(e.target.checked);
-        }
+        const tr = e.target.closest('tr'); const ctrl = tr.querySelector('.mat-ctrl'); const inp = tr.querySelector('.mat-val') || tr.querySelector('.mat-val-drop');
+        if (e.target.checked) { ctrl.style.display = 'block'; tr.classList.add('selected'); if(inp) inp.focus(); } 
+        else { ctrl.style.display = 'none'; tr.classList.remove('selected'); tr.querySelectorAll('input, select').forEach(el => el.value = ''); }
+        if(tr.dataset.name === "3-Phase SMC Meter Box") handleSMCLogic(e.target.checked);
       };
     });
   }
 
-  // --- AUTOMATED DEPENDENCY LOGIC ---
   function handleSMCLogic(isChecked) {
-    if (!isChecked) return; // Only apply logic on selection
-
+    if (!isChecked) return; 
     const rows = document.querySelectorAll('#matTableBody tr');
-    
-    // 1. Find and Set Smart Meter Installed to YES
     rows.forEach(tr => {
       if(tr.dataset.name === "3-Phase Smart Meter Installed") {
         const ck = tr.querySelector('.mat-check');
-        if(!ck.checked) {
-          ck.checked = true;
-          ck.dispatchEvent(new Event('change')); // Trigger visibility
-        }
+        if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); }
         tr.querySelector('.mat-val').value = "Yes";
       }
     });
-
-    // 2. Find and Set CT Qty to 4
     rows.forEach(tr => {
       if(tr.dataset.name === "Resin Type Current Transformer (CT)") {
         const ck = tr.querySelector('.mat-check');
-        if(!ck.checked) {
-          ck.checked = true;
-          ck.dispatchEvent(new Event('change'));
-        }
+        if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); }
         tr.querySelector('.mat-val-count').value = "4";
-        // Optional: Force Rating if needed, otherwise user selects rating
       }
     });
   }
@@ -476,23 +530,15 @@
     document.querySelectorAll('#matTableBody tr').forEach(tr => {
       const ck = tr.querySelector('.mat-check');
       if(ck.checked) {
-        const type = tr.dataset.type;
-        const name = tr.dataset.name;
-        let obj = { name: name, type: type };
-
+        const type = tr.dataset.type, name = tr.dataset.name; let obj = { name: name, type: type };
         if (type === 'DROPDOWN_PLUS_DROPDOWN_COUNT') {
-           const rating = tr.querySelector('.mat-val-drop').value;
-           const count = tr.querySelector('.mat-val-count').value;
+           const rating = tr.querySelector('.mat-val-drop').value, count = tr.querySelector('.mat-val-count').value;
            if (!rating || !count) { err = `Please select Rating AND Count for ${name}`; return; }
-           obj.rating = rating;
-           obj.count = count;
+           obj.rating = rating; obj.count = count;
         } else {
-           const valEl = tr.querySelector('.mat-val');
-           const val = valEl.value.trim();
+           const valEl = tr.querySelector('.mat-val'), val = valEl.value.trim();
            if(!val || (type==='COUNT' && val<=0)) { err = `Please complete details for ${name}`; return; }
-           
-           if(type==='COUNT') obj.count = val;
-           else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
+           if(type==='COUNT') obj.count = val; else if(type==='DROPDOWN') { obj.rating = val; obj.count = 1; }
         }
         list.push(obj);
       }
@@ -503,22 +549,18 @@
 
   function fetchOpts() {
     callApi('getOptions').then(r => {
-      circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair;
-      remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
-      populate('zone', r.zones); populate('dependency', r.dependencies);
-      populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
+      circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair; remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
+      populate('zone', r.zones); populate('dependency', r.dependencies); populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
     });
   }
-  function populate(id, list) {
-    const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join('');
-    el.disabled = !list || !list.length;
-  }
+  function populate(id, list) { const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join(''); el.disabled = !list || !list.length; }
   
   get('zone').onchange = e => { populate('circle', circlesByZone[e.target.value]); populate('division',[]); };
   get('circle').onchange = e => { populate('division', divisionsByPair[`${get('zone').value}||${e.target.value}`]); };
   get('dependency').onchange = e => { populate('remBucket', remarksByDep[e.target.value]); populate('finBucket',[]); };
   get('remBucket').onchange = e => { populate('finBucket', finalsByPair[`${get('dependency').value}||${e.target.value}`]); };
   get('meterNo').oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); };
+  get('btnSync').onclick = () => fetchOpts();
   
   function handleImg(e, k) {
     const f = e.target.files[0]; if(!f) { imgs[k]=null; get('p_'+k).classList.remove('show'); return; }
@@ -530,79 +572,49 @@
         const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
         c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
         imgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
-        
-        // UNLOCK FLOW TRIGGER
         if(k === 'before') unlockOMFlow();
-
       }; i.src = ev.target.result;
     }; r.readAsDataURL(f);
   }
   
-  get('f_meter').onchange = e => handleImg(e,'meter'); 
-  get('f_ct').onchange = e => handleImg(e,'ct'); 
-  get('f_dt').onchange = e => handleImg(e,'dt');
-  get('f_before').onchange = e => handleImg(e,'before');
-  get('f_after').onchange = e => handleImg(e,'after');
+  get('f_meter').onchange = e => handleImg(e,'meter'); get('f_ct').onchange = e => handleImg(e,'ct'); get('f_dt').onchange = e => handleImg(e,'dt');
+  get('f_before').onchange = e => handleImg(e,'before'); get('f_after').onchange = e => handleImg(e,'after');
 
   const setLoading = (busy) => {
     const btn = get('btnSave');
-    if (busy) {
-      btn.disabled = true;
-      btn.textContent = 'Processing...';
-      btn.style.opacity = '0.7';
-    } else {
-      btn.disabled = false;
-      btn.textContent = 'SUBMIT REPORT';
-      btn.style.opacity = '1';
-    }
+    if (busy) { btn.disabled = true; btn.textContent = 'Processing...'; btn.style.opacity = '0.7'; } 
+    else { btn.disabled = false; btn.textContent = 'SUBMIT REPORT'; btn.style.opacity = '1'; }
   };
 
-  function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
+  function generateUUID() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) { var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8); return v.toString(16); }); }
 
   get('btnSave').onclick = async () => {
     if (get('btnSave').disabled) return;
-
     const val = id => get(id).value.trim();
     const p = { empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus') };
     
-    // Add Unique Request ID for Idempotency
     p.requestId = generateUUID();
 
     if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus) return msg('formMsg','Missing selections','err');
     if(!p.fieldRemark) return msg('formMsg','Field Remark is required','err');
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Error','Invalid Meter No format');
 
-    let action = '';
-    
-    setLoading(true);
+    let action = ''; setLoading(true);
 
     if (currentMode === 'NEW') {
-      action = 'submitFinal';
-      p.vehicleRequired = val('vehReq');
-      p.materialRequired = val('matReq');
+      action = 'submitFinal'; p.vehicleRequired = val('vehReq'); p.materialRequired = val('matReq');
       if(!p.materialRequired) { setLoading(false); return msg('formMsg','Material Req is required','err'); }
       if(!imgs.meter || !imgs.ct || !imgs.dt) { setLoading(false); return msg('formMsg','3 Photos Required','err'); }
       p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
-      
       submitPayload(action, p);
-    
     } else { 
       action = 'submitOM';
-      
       const matRes = getOMData();
       if(matRes.error) { setLoading(false); return msg('formMsg', matRes.error, 'err'); }
       if(matRes.data.length === 0) { setLoading(false); return modal('Validation Error', 'You must select at least one material used.'); }
       p.materialData = matRes.data; 
-      
-      // O&M Vehicle Field Capture
       p.vehicleOM = val('vehicleOM');
       if(!p.vehicleOM) { setLoading(false); return msg('formMsg', 'Please select Vehicle use while O&M', 'err'); }
-
       if(!imgs.before || !imgs.after) { setLoading(false); return msg('formMsg','Before & After Photos Required','err'); }
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
 
@@ -610,83 +622,40 @@
       try {
         const hist = await callApi('checkOMHistory', { meterNo: p.meterNo });
         if (hist.count > 0) {
-          const d = hist.lastMeta;
-          const nextVisit = hist.count + 1;
-          const html = `
-            <div class="warn-box" style="border:1px solid #f9ab00; background:#fff8e1;">
-               <strong>Already O&M done ${hist.count} times.</strong><br><br>
-               <strong>Last Visited By:</strong><br>Name: ${d.name}<br>Role: ${d.designation}<br>Mobile: ${d.mobile}<br>Date: ${d.date}
-            </div>
-            <p style="font-weight:600; margin-top:10px;">This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}th</span> Visit.</p>
-            <p>Please confirm submission.</p>`;
-          
-          modal('Repeat Visit Confirmation', html, true, () => { 
-             submitPayload(action, p); 
-          }, () => {
-             setLoading(false);
-          });
+          const d = hist.lastMeta; const nextVisit = hist.count + 1;
+          const html = `<div class="warn-box" style="border:1px solid #f9ab00; background:#fff8e1;"><strong>Already O&M done ${hist.count} times.</strong><br><br><strong>Last Visited By:</strong><br>Name: ${d.name}<br>Role: ${d.designation}<br>Mobile: ${d.mobile}<br>Date: ${d.date}</div><p style="font-weight:600; margin-top:10px;">This will be the <span style="color:#1a73e8;font-size:18px;">${nextVisit}th</span> Visit.</p><p>Please confirm submission.</p>`;
+          modal('Repeat Visit Confirmation', html, true, () => { submitPayload(action, p); }, () => { setLoading(false); });
           msg('formMsg', ''); 
-        } else {
-          submitPayload(action, p);
-        }
-      } catch (e) { 
-        setLoading(false);
-        msg('formMsg', 'Error checking history: ' + e.message, 'err'); 
-      }
+        } else { submitPayload(action, p); }
+      } catch (e) { setLoading(false); msg('formMsg', 'Error checking history: ' + e.message, 'err'); }
     }
   };
 
   function submitPayload(action, p) {
     msg('formMsg','Saving Report...');
     callApi(action, p).then(res => {
-      if(res.ok) {
-        msg('formMsg',''); resetForm(); show('view-dashboard');
-        modal('Success', 'Report Saved Successfully!');
-      } else {
-        setLoading(false);
-        msg('formMsg', res.message || 'Error', 'err');
-      }
-    }).catch(e => {
-      setLoading(false);
-      msg('formMsg', e.message, 'err');
-    });
+      if(res.ok) { msg('formMsg',''); resetForm(); show('view-dashboard'); modal('Success', 'Report Saved Successfully!'); } 
+      else { setLoading(false); msg('formMsg', res.message || 'Error', 'err'); }
+    }).catch(e => { setLoading(false); msg('formMsg', e.message, 'err'); });
   }
 
   function resetForm() {
     ['meterNo','fieldRemark','matReq'].forEach(id=>get(id).value='');
     ['zone','dependency','rectStatus','vehReq','vehicleOM'].forEach(id=>get(id).selectedIndex=0);
     get('zone').dispatchEvent(new Event('change'));
-    
     document.querySelectorAll('.img-box').forEach(d => d.classList.remove('show'));
     document.querySelectorAll('input[type="file"]').forEach(i => i.value='');
     imgs.meter=null; imgs.ct=null; imgs.dt=null; imgs.before=null; imgs.after=null;
-    
-    setLoading(false);
-    get('dupWarning').textContent = '';
-    
-    get('om-flow-locked').classList.remove('unlocked');
-    window.scrollTo(0,0);
+    setLoading(false); get('dupWarning').textContent = ''; get('om-flow-locked').classList.remove('unlocked'); window.scrollTo(0,0);
   }
 
   function modal(t, tx, showCancel=false, onConfirm=null, onCancel=null) { 
-    get('mTitle').textContent=t; get('mBody').innerHTML=tx; 
-    const btnCancel = get('mCancel'); const btnOk = get('mOk');
+    get('mTitle').textContent=t; get('mBody').innerHTML=tx; const btnCancel = get('mCancel'); const btnOk = get('mOk');
     if(showCancel) {
-      btnCancel.style.display = 'inline-block';
-      
-      btnCancel.onclick = () => { 
-        get('modal').classList.remove('open'); 
-        if(onCancel) onCancel(); 
-      };
-      
-      btnOk.textContent = 'CONFIRM & SUBMIT';
-      btnOk.onclick = () => { 
-        get('modal').classList.remove('open'); 
-        if(onConfirm) onConfirm(); 
-      };
+      btnCancel.style.display = 'inline-block'; btnCancel.onclick = () => { get('modal').classList.remove('open'); if(onCancel) onCancel(); };
+      btnOk.textContent = 'CONFIRM & SUBMIT'; btnOk.onclick = () => { get('modal').classList.remove('open'); if(onConfirm) onConfirm(); };
     } else {
-      btnCancel.style.display = 'none'; btnOk.textContent = 'OK';
-      btnOk.onclick = () => get('modal').classList.remove('open');
+      btnCancel.style.display = 'none'; btnOk.textContent = 'OK'; btnOk.onclick = () => get('modal').classList.remove('open');
     }
     get('modal').classList.add('open'); 
   }
