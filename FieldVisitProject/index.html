@@ -3,32 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v3.0</title>
+  <title>Field Visit App v3.1</title>
   <style>
-    /* --- CSS STYLES --- */
+    /* --- CORE STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
+    .admin-container { max-width: 900px; margin: 0 auto; padding: 16px; width: 100%; } /* Wider container for Admin Panel */
     
-    /* View Switching */
     .view-section { display: none; flex-grow: 1; }
     .view-section.active { display: block; animation: fade 0.3s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
-    /* Header */
     .app-header { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 16px; margin: -16px -16px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
     .brand { font-size: 20px; font-weight: 800; color: var(--primary); }
     .user-info { text-align: right; font-size: 13px; color: #5f6368; margin-right: 12px; }
     .btn-logout { background: #fce8e6; color: var(--err); border: 1px solid #fad2cf; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+    .btn-nav-admin { background: #e8f0fe; color: var(--primary); border: 1px solid #d2e3fc; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-right:10px; display:none; }
     
-    /* Dashboard Buttons */
     .dash-btn { background: #fff; border: 1px solid #ddd; padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.1s; }
     .dash-btn:active { transform: scale(0.98); background: #f8f9fa; }
     .dash-btn h3 { margin: 0 0 5px; color: var(--primary); }
     .dash-btn p { margin: 0; color: #666; font-size: 13px; }
 
-    /* Inputs */
+    /* Form Elements */
     .sec-title { margin: 30px 0 10px; font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
     label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; }
     .req { color: var(--err); }
@@ -38,7 +37,6 @@
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
-    /* Tables & Materials */
     .mat-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
     .mat-table td { padding: 12px 8px; border-bottom: 1px solid #ddd; vertical-align: middle; }
     .mat-check { width: 24px; height: 24px; cursor: pointer; accent-color: var(--primary); transform: scale(1.1); margin-right: 10px; }
@@ -48,27 +46,22 @@
     .mat-composite .mat-inp { flex-grow: 1; }
     .mat-composite input[type="number"] { width: 90px; } 
 
-    /* Password Eye */
     .pass-wrap { position: relative; width: 100%; }
     .pass-wrap input { padding-right: 45px; }
     .pass-toggle { position: absolute; right: 0; top: 0; height: 100%; width: 45px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #666; font-size: 18px; user-select: none; }
 
-    /* Buttons */
     .actions { margin-top: 30px; display: flex; flex-direction: column; gap: 12px; }
     button.main { background: var(--primary); color: #fff; padding: 16px; border-radius: 50px; border: none; font-size: 18px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: opacity 0.2s; }
     button.main:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
     button.link { background: none; border: none; color: #5f6368; text-decoration: underline; cursor: pointer; padding: 10px; }
     
-    /* Images */
     .img-box { margin-top: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; text-align: center; display: none; background: #fff; }
     .img-box.show { display: block; border-style: solid; border-color: var(--border); }
     .img-box img { max-width: 100%; max-height: 250px; border-radius: 4px; }
     
-    /* Messaging */
     .msg { text-align: center; margin-top: 15px; font-weight: 500; min-height: 20px; }
     .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
     
-    /* Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 1000; padding: 20px; }
     .modal-overlay.open { display: grid; }
     .modal { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
@@ -83,23 +76,38 @@
     #om-flow-locked { opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
     #om-flow-locked.unlocked { opacity: 1; pointer-events: auto; }
 
-    /* Admin Table Styles */
-    .admin-container { overflow-x: auto; margin-top: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .admin-table th, .admin-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
-    .admin-table th { background: #f8f9fa; font-weight: 700; color: var(--primary); position: sticky; top: 0; z-index: 10; }
-    .btn-small { padding: 4px 8px; font-size: 12px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; }
+    /* --- ADMIN PANEL SPECIFIC STYLES --- */
+    .admin-tools { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; }
+    .admin-box { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid #ddd; }
+    .add-user-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+    .add-user-grid label { margin: 0 0 4px; font-size: 12px; }
+    .add-user-grid input, .add-user-grid select { padding: 8px; font-size: 14px; }
+    
+    .search-bar { display: flex; gap: 8px; flex-grow: 1; max-width: 400px; }
+    .search-bar input { padding: 8px 12px; font-size: 14px; }
+    .btn-small { padding: 6px 12px; font-size: 13px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; background: #f8f9fa; font-weight:600;}
+    .btn-primary { background: var(--primary); color: #fff; border:none; }
     .btn-reset { background: #fff3e0; color: #e65100; border-color: #ffe0b2; }
-    .toggle-status { padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; text-align: center; border:none; width: 70px; }
+    
+    .admin-table-wrap { overflow-x: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #ddd;}
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
+    .admin-table th, .admin-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    .admin-table th { background: #f8f9fa; font-weight: 700; color: var(--primary); position: sticky; top: 0; z-index: 10; }
+    .admin-table tr:hover { background-color: #f8f9fa; }
+    
+    .toggle-status { padding: 4px 8px; border-radius: 4px; font-weight: 600; cursor: pointer; text-align: center; border:none; width: 75px; font-size: 12px;}
     .st-active { background: #e6f4ea; color: #137333; }
     .st-inactive { background: #fce8e6; color: #c5221f; }
-    .role-select { padding: 4px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; width: 80px;}
-    .admin-tools { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .role-select { padding: 4px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; width: 85px;}
+    
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; font-size: 14px; font-weight: 600; }
+    .pagination button { padding: 6px 12px; cursor: pointer; border-radius: 4px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-weight: bold; }
+    .pagination button:disabled { border-color: #ccc; color: #999; cursor: not-allowed; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<div id="main-container" class="container">
   
   <div id="view-login" class="view-section active">
     <div style="margin: 60px 0 40px;"><h1>Welcome</h1><p style="color:#5f6368;">Log in to continue</p></div>
@@ -132,16 +140,13 @@
     <div class="app-header">
       <div class="brand">📋 Field Visit</div>
       <div style="display:flex;align-items:center;">
+        <button id="btnNavAdminDash" class="btn-nav-admin" onclick="loadAdminPanel()">🛡️ Admin Control</button>
         <div class="user-info"><div id="dName" style="font-weight:700;">User</div><div id="dCode">ID</div></div>
         <button class="btn-logout" onclick="logout()">Logout</button>
       </div>
     </div>
 
-    <div id="switchToAdminBtn" style="display:none; text-align:right; margin-bottom:10px;">
-        <button class="btn-small" onclick="loadAdminPanel()">⚙️ Go to Admin Panel</button>
-    </div>
-
-    <div style="margin-top: 20px;">
+    <div style="margin-top: 40px;">
       <div class="dash-btn" onclick="openForm('NEW')">
         <h3>✨ First Time Visit</h3>
         <p>New installation report. Checks for duplicates.</p>
@@ -154,46 +159,13 @@
     </div>
   </div>
 
-  <div id="view-admin" class="view-section" style="max-width: 800px; margin: 0 auto; width:100%;">
-    <div class="app-header">
-      <div class="brand">🛡️ Admin Control</div>
-      <div style="display:flex;align-items:center;">
-        <button class="btn-logout" onclick="logout()">Logout</button>
-      </div>
-    </div>
-    
-    <div class="admin-tools">
-      <h3 style="margin:0; color:var(--primary);">User Management</h3>
-      <div>
-        <button class="btn-small" onclick="loadAdminPanel()">🔄 Refresh</button>
-        <button class="btn-small" onclick="show('view-dashboard')" style="background:#e8f0fe; border-color:#d2e3fc; color:#1a73e8;">📝 Fill Visit Form</button>
-      </div>
-    </div>
-    
-    <div id="adminMsg" class="msg" style="margin: 0 0 10px 0; text-align:left; font-size:13px;"></div>
-
-    <div class="admin-container">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Emp Code</th>
-            <th>Role</th>
-            <th>Status</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="adminTableBody">
-          <tr><td colspan="5" style="text-align:center;">Loading users...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <div id="view-form" class="view-section">
     <div class="app-header">
       <div class="brand" id="formTitle">Report</div>
-      <button onclick="show('view-dashboard')" class="link" style="font-size:12px;">Back</button>
+      <div style="display:flex;align-items:center;">
+         <button id="btnNavAdminForm" class="btn-nav-admin" onclick="loadAdminPanel()">🛡️ Admin Control</button>
+         <button onclick="show('view-dashboard')" class="link" style="font-size:13px; font-weight:bold;">Close</button>
+      </div>
     </div>
 
     <div class="sec-title">Location</div>
@@ -241,9 +213,7 @@
         
         <div id="sec-vehicle-om" class="hidden">
           <label>Vehicle use while O&M <span class="req">*</span></label>
-          <select id="vehicleOM">
-            <option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option>
-          </select>
+          <select id="vehicleOM"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select>
         </div>
 
         <div id="sec-veh">
@@ -262,6 +232,63 @@
       <button class="link" id="btnSync">Refresh Options</button>
       <div id="formMsg" class="msg"></div>
     </div>
+  </div>
+</div>
+
+<div id="view-admin" class="view-section admin-container">
+  <div class="app-header" style="margin: -16px -16px 20px;">
+    <div class="brand">🛡️ Admin Control System</div>
+    <div style="display:flex;align-items:center;">
+      <button class="btn-small" onclick="show('view-dashboard')" style="background:#e8f0fe; border-color:#d2e3fc; color:#1a73e8; margin-right:15px; font-weight:bold;">📋 Go to Field App</button>
+      <div class="user-info"><div id="aName" style="font-weight:700;">Admin</div><div id="aCode">ID</div></div>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  
+  <div class="admin-box">
+    <h4 style="margin:0 0 10px; color:var(--primary);">➕ Add New User</h4>
+    <div class="add-user-grid">
+      <div><label>User Name</label><input type="text" id="n_name" placeholder="Full Name"></div>
+      <div><label>Emp Code</label><input type="text" id="n_code" placeholder="e.g. INTL123"></div>
+      <div><label>Mobile No</label><input type="number" id="n_mob" placeholder="10 Digits"></div>
+      <div><label>Designation</label><input type="text" id="n_desig" placeholder="Role/Title"></div>
+      <div><label>Role</label><select id="n_role"><option value="User">User</option><option value="Admin">Admin</option></select></div>
+      <div><button class="btn-small btn-primary" style="width:100%; height:38px;" onclick="addNewUser()">Create User</button></div>
+    </div>
+    <div id="addMsg" class="msg" style="margin-top:5px; font-size:13px; text-align:left;"></div>
+  </div>
+
+  <div class="admin-tools">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search Name or Emp Code..." onkeypress="if(event.key==='Enter') execSearch()">
+      <button class="btn-small btn-primary" onclick="execSearch()">Search</button>
+      <button class="btn-small" onclick="clearSearch()">Clear</button>
+    </div>
+    <div id="adminMsg" class="msg" style="margin: 0; font-size:13px; font-weight:bold;"></div>
+  </div>
+
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Name / Designation</th>
+          <th>Emp Code</th>
+          <th>Mobile</th>
+          <th>Role Access</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="adminTableBody">
+        <tr><td colspan="6" style="text-align:center; padding: 20px;">Loading users...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div class="pagination">
+    <button id="btnPrevPage" onclick="changePage(-1)">&#8592; Prev</button>
+    <span id="pageInfo">Page 1 of 1</span>
+    <button id="btnNextPage" onclick="changePage(1)">Next &#8594;</button>
   </div>
 </div>
 
@@ -298,15 +325,38 @@
   let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
   const imgs = { meter:null, ct:null, dt:null, before:null, after:null };
   
+  // Admin State
+  let adminState = { page: 1, limit: 20, search: '', totalPages: 1 };
+  
   const get = id => document.getElementById(id);
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
-  const show = (id) => { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); get(id).classList.add('active'); window.scrollTo(0,0); };
+
+  function show(id) { 
+    document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); 
+    get(id).classList.add('active'); 
+    
+    // Manage Container Widths
+    if(id === 'view-admin') {
+       get('main-container').style.display = 'none';
+       window.scrollTo(0,0);
+    } else {
+       get('main-container').style.display = 'flex';
+       window.scrollTo(0,0);
+    }
+    
+    // Manage Global Nav Buttons
+    if(currentUser && currentUser.role && currentUser.role.toLowerCase() === 'admin') {
+      get('btnNavAdminDash').style.display = 'block';
+      get('btnNavAdminForm').style.display = 'block';
+    } else {
+      get('btnNavAdminDash').style.display = 'none';
+      get('btnNavAdminForm').style.display = 'none';
+    }
+  }
 
   async function callApi(action, data = {}) {
     try {
-      const response = await fetch(API_URL, {
-        method: "POST", body: JSON.stringify({ action: action, data: data }), headers: { "Content-Type": "text/plain;charset=utf-8" } 
-      });
+      const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: action, data: data }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
       return await response.json();
     } catch (e) { throw new Error("Connection Failed"); }
   }
@@ -315,15 +365,9 @@
     const s = localStorage.getItem('fv_user');
     if(s) { 
       currentUser = JSON.parse(s); 
-      // RBAC Routing
-      if(currentUser.role && currentUser.role.toLowerCase() === 'admin') {
-        loadAdminPanel();
-      } else {
-        loadDashboard(); 
-      }
-    } else {
-      show('view-login');
-    }
+      if(currentUser.role && currentUser.role.toLowerCase() === 'admin') { loadAdminPanel(); } 
+      else { loadDashboard(); }
+    } else { show('view-login'); }
   }
 
   function logout() { localStorage.removeItem('fv_user'); currentUser=null; show('view-login'); }
@@ -337,9 +381,7 @@
         currentUser={empCode:res.empCode, name:res.name, role:res.role}; 
         localStorage.setItem('fv_user',JSON.stringify(currentUser)); 
         msg('loginMsg',''); 
-        
-        if(currentUser.role.toLowerCase() === 'admin') loadAdminPanel();
-        else loadDashboard(); 
+        if(currentUser.role.toLowerCase() === 'admin') loadAdminPanel(); else loadDashboard(); 
       } else msg('loginMsg', res.message, 'err');
     }).catch(e => msg('loginMsg', e.message, 'err'));
   };
@@ -349,8 +391,7 @@
     if(!c||!o||!n) return msg('resetMsg','All fields required','err');
     msg('resetMsg','Updating...');
     callApi('changePassword', { empCode: c, oldPass: o, newPass: n }).then(res => {
-       if(res.success) msg('resetMsg','Password Updated Successfully!','ok');
-       else msg('resetMsg', res.message, 'err');
+       if(res.success) msg('resetMsg','Password Updated Successfully!','ok'); else msg('resetMsg', res.message, 'err');
     }).catch(e=>msg('resetMsg', e.message, 'err'));
   }
 
@@ -359,26 +400,28 @@
 
   function loadDashboard() {
     get('dName').textContent = currentUser.name.split(' ')[0]; get('dCode').textContent = currentUser.empCode;
-    
-    // Show Admin switch button if Admin
-    if(currentUser.role && currentUser.role.toLowerCase() === 'admin') {
-       get('switchToAdminBtn').style.display = 'block';
-    } else {
-       get('switchToAdminBtn').style.display = 'none';
-    }
-    
-    show('view-dashboard');
-    if(get('zone').options.length <= 1) fetchOpts(); 
+    show('view-dashboard'); if(get('zone').options.length <= 1) fetchOpts(); 
   }
 
-  /* --- ADMIN PANEL LOGIC --- */
+  /* =========================================================
+     ADMIN PANEL LOGIC (PAGINATION, SEARCH, CREATE)
+     ========================================================= */
+
   function loadAdminPanel() {
     show('view-admin');
-    get('adminMsg').textContent = 'Fetching users...';
-    get('adminMsg').className = 'msg';
+    get('aName').textContent = currentUser.name.split(' ')[0]; get('aCode').textContent = currentUser.empCode;
+    fetchAdminData();
+  }
+
+  function fetchAdminData() {
+    get('adminMsg').textContent = 'Loading...'; get('adminMsg').className = 'msg';
+    const payload = { adminCode: currentUser.empCode, page: adminState.page, limit: adminState.limit, search: adminState.search };
     
-    callApi('getAllUsers', { adminCode: currentUser.empCode }).then(res => {
+    callApi('getUsersPaginated', payload).then(res => {
       if(res.success) {
+        adminState.totalPages = res.totalPages;
+        adminState.page = res.currentPage;
+        updatePaginationUI(res.totalRecords);
         renderAdminTable(res.users);
         msg('adminMsg','');
       } else { msg('adminMsg', res.message, 'err'); }
@@ -386,8 +429,9 @@
   }
 
   function renderAdminTable(users) {
-    const tbody = get('adminTableBody');
-    tbody.innerHTML = '';
+    const tbody = get('adminTableBody'); tbody.innerHTML = '';
+    if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No users found.</td></tr>'; return; }
+
     users.forEach(u => {
       const isActive = u.status.toLowerCase() === 'active';
       const statusClass = isActive ? 'st-active' : 'st-inactive';
@@ -395,7 +439,8 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight:600;">${u.name}<br><span style="font-weight:normal;color:#666;font-size:11px;">${u.designation}</span></td>
-        <td>${u.empCode}</td>
+        <td style="font-family:monospace;">${u.empCode}</td>
+        <td>${u.mobile || '-'}</td>
         <td>
           <select class="role-select" onchange="changeUserRole('${u.empCode}', this.value)">
             <option value="Admin" ${u.role.toLowerCase()==='admin'?'selected':''}>Admin</option>
@@ -403,9 +448,7 @@
           </select>
         </td>
         <td>
-          <button class="toggle-status ${statusClass}" onclick="toggleUserStatus('${u.empCode}', '${u.status}', this)">
-            ${u.status}
-          </button>
+          <button class="toggle-status ${statusClass}" onclick="toggleUserStatus('${u.empCode}', '${u.status}', this)">${u.status}</button>
         </td>
         <td>
           <button class="btn-small btn-reset" onclick="resetUserPass('${u.empCode}', '${u.name}')">Reset Pass</button>
@@ -413,6 +456,58 @@
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  function updatePaginationUI(total) {
+    get('pageInfo').textContent = `Page ${adminState.page} of ${adminState.totalPages} (Total: ${total})`;
+    get('btnPrevPage').disabled = adminState.page <= 1;
+    get('btnNextPage').disabled = adminState.page >= adminState.totalPages;
+  }
+
+  function changePage(delta) {
+    const newPage = adminState.page + delta;
+    if(newPage >= 1 && newPage <= adminState.totalPages) {
+      adminState.page = newPage;
+      fetchAdminData();
+    }
+  }
+
+  function execSearch() {
+    adminState.search = get('searchInput').value.trim();
+    adminState.page = 1; // Reset to first page
+    fetchAdminData();
+  }
+
+  function clearSearch() {
+    get('searchInput').value = '';
+    adminState.search = '';
+    adminState.page = 1;
+    fetchAdminData();
+  }
+
+  window.addNewUser = function() {
+    const p = {
+      adminCode: currentUser.empCode,
+      name: get('n_name').value.trim(),
+      empCode: get('n_code').value.trim().toUpperCase(),
+      mobile: get('n_mob').value.trim(),
+      designation: get('n_desig').value.trim(),
+      role: get('n_role').value
+    };
+    
+    if(!p.name || !p.empCode) return msg('addMsg','Name and Emp Code are required.','err');
+    
+    msg('addMsg','Creating user...', 'warn');
+    callApi('createUser', p).then(res => {
+      if(res.success) {
+        msg('addMsg', `Success: ${p.name} created.`, 'ok');
+        ['n_name','n_code','n_mob','n_desig'].forEach(id=>get(id).value=''); // clear form
+        adminState.page = 1; // reset to show new user
+        adminState.search = '';
+        get('searchInput').value = '';
+        fetchAdminData();
+      } else { msg('addMsg', res.message, 'err'); }
+    }).catch(e => msg('addMsg', e.message, 'err'));
   }
 
   window.toggleUserStatus = function(empCode, currentStatus, btnElement) {
@@ -434,22 +529,20 @@
   }
 
   window.resetUserPass = function(empCode, name) {
-    if(!confirm(`Are you sure you want to reset password for ${name} to "Pass@123"?`)) return;
+    if(!confirm(`Reset password for ${name} to "Pass@123"?`)) return;
     callApi('adminResetPassword', { adminCode: currentUser.empCode, empCode: empCode }).then(res => {
-      if(res.success) alert(`Password for ${name} reset to Pass@123 successfully.`);
+      if(res.success) alert(`Password for ${name} reset successfully.`);
       else alert("Failed: " + res.message);
     }).catch(e => alert(e.message));
   }
-  /* --- END ADMIN PANEL LOGIC --- */
 
+  /* =========================================================
+     FIELD VISIT FLOW (UNCHANGED)
+     ========================================================= */
 
   window.openForm = (mode) => {
-    currentMode = mode;
-    resetForm();
-    get('formTitle').textContent = mode === 'NEW' ? 'New Visit' : 'O&M Visit';
-    const locker = get('om-flow-locked');
-    locker.classList.remove('unlocked');
-    
+    currentMode = mode; resetForm(); get('formTitle').textContent = mode === 'NEW' ? 'New Visit' : 'O&M Visit';
+    const locker = get('om-flow-locked'); locker.classList.remove('unlocked');
     if (mode === 'NEW') {
       get('sec-mat-req').classList.remove('hidden'); get('sec-mat-used').classList.add('hidden');
       get('img-sec-new').classList.remove('hidden'); get('img-sec-om-before').classList.add('hidden'); get('img-sec-om-after').classList.add('hidden');
@@ -459,8 +552,7 @@
       locker.classList.remove('unlocked');
       get('sec-mat-req').classList.add('hidden'); get('sec-mat-used').classList.remove('hidden');
       get('img-sec-new').classList.add('hidden'); get('img-sec-om-before').classList.remove('hidden'); get('img-sec-om-after').classList.remove('hidden'); 
-      get('sec-vehicle-om').classList.remove('hidden'); get('sec-veh').classList.add('hidden'); 
-      renderOMTable();
+      get('sec-vehicle-om').classList.remove('hidden'); get('sec-veh').classList.add('hidden'); renderOMTable();
     }
     show('view-form');
   };
@@ -509,20 +601,8 @@
   function handleSMCLogic(isChecked) {
     if (!isChecked) return; 
     const rows = document.querySelectorAll('#matTableBody tr');
-    rows.forEach(tr => {
-      if(tr.dataset.name === "3-Phase Smart Meter Installed") {
-        const ck = tr.querySelector('.mat-check');
-        if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); }
-        tr.querySelector('.mat-val').value = "Yes";
-      }
-    });
-    rows.forEach(tr => {
-      if(tr.dataset.name === "Resin Type Current Transformer (CT)") {
-        const ck = tr.querySelector('.mat-check');
-        if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); }
-        tr.querySelector('.mat-val-count').value = "4";
-      }
-    });
+    rows.forEach(tr => { if(tr.dataset.name === "3-Phase Smart Meter Installed") { const ck = tr.querySelector('.mat-check'); if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); } tr.querySelector('.mat-val').value = "Yes"; } });
+    rows.forEach(tr => { if(tr.dataset.name === "Resin Type Current Transformer (CT)") { const ck = tr.querySelector('.mat-check'); if(!ck.checked) { ck.checked = true; ck.dispatchEvent(new Event('change')); } tr.querySelector('.mat-val-count').value = "4"; } });
   }
 
   function getOMData() {
@@ -543,8 +623,7 @@
         list.push(obj);
       }
     });
-    if(err) return { error: err };
-    return { data: list };
+    if(err) return { error: err }; return { data: list };
   }
 
   function fetchOpts() {
@@ -608,12 +687,10 @@
       p.imageBase64_meter = imgs.meter; p.imageBase64_ct = imgs.ct; p.imageBase64_dtcable = imgs.dt;
       submitPayload(action, p);
     } else { 
-      action = 'submitOM';
-      const matRes = getOMData();
+      action = 'submitOM'; const matRes = getOMData();
       if(matRes.error) { setLoading(false); return msg('formMsg', matRes.error, 'err'); }
       if(matRes.data.length === 0) { setLoading(false); return modal('Validation Error', 'You must select at least one material used.'); }
-      p.materialData = matRes.data; 
-      p.vehicleOM = val('vehicleOM');
+      p.materialData = matRes.data; p.vehicleOM = val('vehicleOM');
       if(!p.vehicleOM) { setLoading(false); return msg('formMsg', 'Please select Vehicle use while O&M', 'err'); }
       if(!imgs.before || !imgs.after) { setLoading(false); return msg('formMsg','Before & After Photos Required','err'); }
       p.imageBase64_before = imgs.before; p.imageBase64_after = imgs.after;
