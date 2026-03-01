@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v3.2</title>
+  <title>Field Visit App v3.3</title>
   <style>
     /* --- CORE STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -198,36 +198,40 @@
     <div id="om-flow-locked">
         <div class="sec-title" style="border-bottom-color: var(--warn); color: #d96f00;">⚡ Meter Reading Details</div>
         
-        <div class="reading-grid">
-            <div>
-               <label>KWH (Import) <span class="req">*</span></label>
-               <input id="rdg_kwh" type="number" step="0.01" placeholder="XXXXXX.XX">
+        <label>Is Meter Reading Available? <span class="req">*</span></label>
+        <select id="rdg_available">
+          <option value="">Select</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+        </select>
+        
+        <div id="sec-readings" class="hidden" style="margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fafafa;">
+            <div class="reading-grid">
+                <div>
+                   <label>KWH (Import) <span class="req">*</span></label>
+                   <input id="rdg_kwh" type="number" step="0.01" min="0" placeholder="XXXXXX.XX">
+                </div>
+                <div>
+                   <label>KVAH (Import) <span class="req">*</span></label>
+                   <input id="rdg_kvah" type="number" step="0.01" min="0" placeholder="XXXXXX.XX">
+                </div>
+                <div>
+                   <label>KW (MD) <span class="req">*</span></label>
+                   <input id="rdg_kw" type="number" step="0.001" min="0" placeholder="XXX.XXX">
+                </div>
+                <div>
+                   <label>KVA (MD) <span class="req">*</span></label>
+                   <input id="rdg_kva" type="number" step="0.001" min="0" placeholder="XXX.XXX">
+                </div>
             </div>
-            <div>
-               <label>KVAH (Import) <span class="req">*</span></label>
-               <input id="rdg_kvah" type="number" step="0.01" placeholder="XXXXXX.XX">
-            </div>
-            <div>
-               <label>KW (MD) <span class="req">*</span></label>
-               <input id="rdg_kw" type="number" step="0.001" placeholder="XXX.XXX">
-            </div>
-            <div>
-               <label>KVA (MD) <span class="req">*</span></label>
-               <input id="rdg_kva" type="number" step="0.001" placeholder="XXX.XXX">
+
+            <div style="margin-top: 15px;">
+               <label>KWH Image <span class="req">*</span></label><input id="f_img_kwh" type="file" accept="image/*" capture="environment"><div id="p_img_kwh" class="img-box"><img id="i_img_kwh"></div>
+               <label>KVAH Image <span class="req">*</span></label><input id="f_img_kvah" type="file" accept="image/*" capture="environment"><div id="p_img_kvah" class="img-box"><img id="i_img_kvah"></div>
+               <label>KW (MD) Image <span class="req">*</span></label><input id="f_img_kw" type="file" accept="image/*" capture="environment"><div id="p_img_kw" class="img-box"><img id="i_img_kw"></div>
+               <label>KVA (MD) Image <span class="req">*</span></label><input id="f_img_kva" type="file" accept="image/*" capture="environment"><div id="p_img_kva" class="img-box"><img id="i_img_kva"></div>
             </div>
         </div>
-
-        <div style="margin-top: 15px;">
-           <label>KWH Image <span class="req">*</span></label><input id="f_img_kwh" type="file" accept="image/*" capture="environment"><div id="p_img_kwh" class="img-box"><img id="i_img_kwh"></div>
-           <label>KVAH Image <span class="req">*</span></label><input id="f_img_kvah" type="file" accept="image/*" capture="environment"><div id="p_img_kvah" class="img-box"><img id="i_img_kvah"></div>
-           <label>KW (MD) Image <span class="req">*</span></label><input id="f_img_kw" type="file" accept="image/*" capture="environment"><div id="p_img_kw" class="img-box"><img id="i_img_kw"></div>
-           <label>KVA (MD) Image <span class="req">*</span></label><input id="f_img_kva" type="file" accept="image/*" capture="environment"><div id="p_img_kva" class="img-box"><img id="i_img_kva"></div>
-        </div>
-
-        <label style="display:flex; align-items:center; gap:8px; margin-top:20px; font-weight:normal; background:#fff8e1; padding:10px; border-radius:6px; border:1px solid #ffecb3;">
-          <input type="checkbox" id="rolloverConf" style="width:24px; height:24px; accent-color: #f9ab00;">
-          <span><strong>Meter Rollover Confirmed</strong><br><span style="font-size:12px; color:#666;">Check only if cumulative readings reset to zero</span></span>
-        </label>
         
         <div class="sec-title" style="margin-top:40px;">Remarks & Data</div>
         <label>Field Remark <span class="req">*</span></label><textarea id="fieldRemark" rows="1"></textarea>
@@ -360,7 +364,6 @@
   let currentMode = 'NEW'; 
   let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
   
-  // NEW IMAGES ADDED
   const imgs = { meter:null, ct:null, dt:null, before:null, after:null, img_kwh:null, img_kvah:null, img_kw:null, img_kva:null };
   
   let adminState = { page: 1, limit: 20, search: '', totalPages: 1 };
@@ -435,7 +438,7 @@
   }
 
   /* =========================================================
-     ADMIN PANEL LOGIC (PAGINATION, SEARCH, CREATE)
+     ADMIN PANEL LOGIC 
      ========================================================= */
 
   function loadAdminPanel() {
@@ -545,7 +548,7 @@
   }
 
   /* =========================================================
-     FIELD VISIT FLOW (METER READINGS ADDED)
+     FIELD VISIT FLOW
      ========================================================= */
 
   window.openForm = (mode) => {
@@ -667,11 +670,19 @@
   get('f_meter').onchange = e => handleImg(e,'meter'); get('f_ct').onchange = e => handleImg(e,'ct'); get('f_dt').onchange = e => handleImg(e,'dt');
   get('f_before').onchange = e => handleImg(e,'before'); get('f_after').onchange = e => handleImg(e,'after');
   
-  // NEW IMAGES HANDLERS
   get('f_img_kwh').onchange = e => handleImg(e,'img_kwh');
   get('f_img_kvah').onchange = e => handleImg(e,'img_kvah');
   get('f_img_kw').onchange = e => handleImg(e,'img_kw');
   get('f_img_kva').onchange = e => handleImg(e,'img_kva');
+
+  // NEW: Reading Available Toggle Logic
+  get('rdg_available').onchange = (e) => {
+      if (e.target.value === 'Yes') {
+        get('sec-readings').classList.remove('hidden');
+      } else {
+        get('sec-readings').classList.add('hidden');
+      }
+  };
 
   const setLoading = (busy) => {
     const btn = get('btnSave');
@@ -685,21 +696,31 @@
     if (get('btnSave').disabled) return;
     const val = id => get(id).value.trim();
     
-    // METER READINGS SANITIZATION
-    const valNum = id => parseFloat(val(id));
-    const kwh = valNum('rdg_kwh'); const kvah = valNum('rdg_kvah');
-    const kw = valNum('rdg_kw'); const kva = valNum('rdg_kva');
-    
-    if(isNaN(kwh) || isNaN(kvah) || isNaN(kw) || isNaN(kva)) { return msg('formMsg','All 4 Meter Readings must be valid numbers.','err'); }
-    if(kvah < kwh) { return msg('formMsg','Validation Failed: KVAH (Import) cannot be less than KWH (Import).','err'); }
-    if(kva < kw) { return msg('formMsg','Validation Failed: KVA (MD) cannot be less than KW (MD).','err'); }
-    if(!imgs.img_kwh || !imgs.img_kvah || !imgs.img_kw || !imgs.img_kva) { return msg('formMsg','All 4 Meter Reading Images are required.','err'); }
+    const rdgAvail = val('rdg_available');
+    if (!rdgAvail) return msg('formMsg', 'Please select if Meter Reading is available.', 'err');
+
+    let kwh=0, kvah=0, kw=0, kva=0;
+    let img_kwh=null, img_kvah=null, img_kw=null, img_kva=null;
+
+    if (rdgAvail === 'Yes') {
+      kwh = parseFloat(val('rdg_kwh')); kvah = parseFloat(val('rdg_kvah'));
+      kw = parseFloat(val('rdg_kw')); kva = parseFloat(val('rdg_kva'));
+      
+      if(isNaN(kwh) || isNaN(kvah) || isNaN(kw) || isNaN(kva) || kwh<0 || kvah<0 || kw<0 || kva<0) {
+         return msg('formMsg','All 4 Meter Readings must be valid non-negative numbers.','err');
+      }
+      if(!imgs.img_kwh || !imgs.img_kvah || !imgs.img_kw || !imgs.img_kva) {
+         return msg('formMsg','All 4 Meter Reading Images are required when reading is available.','err');
+      }
+      
+      img_kwh = imgs.img_kwh; img_kvah = imgs.img_kvah; img_kw = imgs.img_kw; img_kva = imgs.img_kva;
+    }
 
     const p = { 
       empCode: currentUser.empCode, zone:val('zone'), circle:val('circle'), division:val('division'), meterNo:val('meterNo'), 
       fieldRemark:val('fieldRemark'), dependency:val('dependency'), remarkBucket:val('remBucket'), finalBucket:val('finBucket'), rectStatus:val('rectStatus'),
-      kwh: kwh.toFixed(2), kvah: kvah.toFixed(2), kw: kw.toFixed(3), kva: kva.toFixed(3), rollover: get('rolloverConf').checked,
-      imageBase64_kwh: imgs.img_kwh, imageBase64_kvah: imgs.img_kvah, imageBase64_kw: imgs.img_kw, imageBase64_kva: imgs.img_kva
+      meterReadingAvailable: rdgAvail, kwh: kwh.toFixed(2), kvah: kvah.toFixed(2), kw: kw.toFixed(3), kva: kva.toFixed(3),
+      imageBase64_kwh: img_kwh, imageBase64_kvah: img_kvah, imageBase64_kw: img_kw, imageBase64_kva: img_kva
     };
     
     p.requestId = generateUUID();
@@ -739,7 +760,7 @@
   };
 
   function submitPayload(action, p) {
-    msg('formMsg','Validating & Saving Report...');
+    msg('formMsg','Saving Report...');
     callApi(action, p).then(res => {
       if(res.ok) { msg('formMsg',''); resetForm(); show('view-dashboard'); modal('Success', res.message); } 
       else { setLoading(false); msg('formMsg', res.message || 'Error', 'err'); modal('Validation Error', res.message); }
@@ -747,10 +768,12 @@
   }
 
   function resetForm() {
-    ['meterNo','fieldRemark','matReq','rdg_kwh','rdg_kvah','rdg_kw','rdg_kva'].forEach(id=>get(id).value='');
+    ['meterNo','fieldRemark','matReq','rdg_kwh','rdg_kvah','rdg_kw','rdg_kva','rdg_available'].forEach(id=>get(id).value='');
     ['zone','dependency','rectStatus','vehReq','vehicleOM'].forEach(id=>get(id).selectedIndex=0);
-    get('rolloverConf').checked = false;
+    
+    get('sec-readings').classList.add('hidden'); // Default hide readings on reset
     get('zone').dispatchEvent(new Event('change'));
+    
     document.querySelectorAll('.img-box').forEach(d => d.classList.remove('show'));
     document.querySelectorAll('input[type="file"]').forEach(i => i.value='');
     Object.keys(imgs).forEach(k => imgs[k] = null);
