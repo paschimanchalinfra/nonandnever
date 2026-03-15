@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v4.0</title>
+  <title>Field Visit App v4.1</title>
   <style>
     /* --- CORE STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -32,7 +32,7 @@
     .req { color: var(--err); }
     input, select, textarea { width: 100%; padding: 14px; font-size: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; appearance: none; color: #000; }
     input:focus, select:focus, textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(26,115,232,0.2); outline: none; }
-    select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
+    select:not([multiple]) { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
     select:disabled { background-color: #e9ecef; color: #6c757d; }
     textarea { resize: vertical; min-height: 80px; }
     
@@ -107,10 +107,28 @@
     /* Meter Readings Sub-Grid */
     .reading-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 
-    /* QC Specific Styles */
-    .qc-img-link { display: inline-block; margin-bottom: 5px; font-size: 13px; color: var(--primary); font-weight: bold; text-decoration: none; }
-    .qc-img-link:hover { text-decoration: underline; }
-    .qc-replace-box { padding: 10px; background: #f8f9fa; border: 1px dashed #ccc; border-radius: 6px; margin-bottom: 15px; }
+    /* QC Specific Advanced Layout Styles */
+    .qc-tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid var(--border); }
+    .qc-tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 700; color: #666; font-size: 15px; }
+    .qc-tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+    
+    .qc-filters { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+    .qc-filters select, .qc-filters input { padding: 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; min-width: 120px;}
+    
+    .qc-batch { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+    .qc-batch h4 { margin: 0 0 15px 0; color: var(--primary); text-transform: uppercase; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
+    .qc-split { display: flex; gap: 20px; flex-wrap: wrap; }
+    .qc-left { flex: 1; min-width: 250px; border-right: 1px solid #ddd; padding-right: 20px; }
+    .qc-right { flex: 1; min-width: 250px; }
+    @media (max-width: 600px) { .qc-left { border-right: none; padding-right: 0; } }
+    
+    .qc-img-card { margin-bottom: 15px; background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 6px; text-align: center; }
+    .qc-img-card img { max-width: 100%; max-height: 250px; border-radius: 4px; display: block; margin: 0 auto 10px; object-fit: contain; background: #f0f0f0;}
+    .qc-img-card label { font-size: 13px; display: block; margin-bottom: 5px; font-weight: bold; color:var(--text);}
+    .qc-img-card input { font-size: 11px; margin-top: 5px; }
+    
+    /* Help text for admin multi-select */
+    .hint-txt { font-size: 11px; color: #666; margin-top: 2px;}
   </style>
 </head>
 <body>
@@ -282,17 +300,25 @@
       <div><label>Emp Code</label><input type="text" id="n_code" placeholder="e.g. INTL123"></div>
       <div><label>Mobile No</label><input type="number" id="n_mob" placeholder="10 Digits"></div>
       <div><label>Designation</label><input type="text" id="n_desig" placeholder="Role/Title"></div>
-      <div><label>QC Zone(s)</label><input type="text" id="n_zone" placeholder="e.g. Zone1, Zone2 or All"></div>
+      
+      <div>
+         <label>QC Zone(s)</label>
+         <select id="n_zone" multiple style="height: 55px;">
+            <option value="All" selected>All Zones</option>
+         </select>
+         <div class="hint-txt">(Hold Ctrl/Cmd to select multiple)</div>
+      </div>
+      
       <div>
          <label>Role</label>
-         <select id="n_role">
+         <select id="n_role" style="height: 42px;">
             <option value="User">User</option>
             <option value="QC">QC User</option>
             <option value="QC Contractor">QC Contractor</option>
             <option value="Admin">Admin</option>
          </select>
       </div>
-      <div><button class="btn-small btn-primary" style="width:100%; height:38px;" onclick="addNewUser()">Create User</button></div>
+      <div><button class="btn-small btn-primary" style="width:100%; height:42px;" onclick="addNewUser()">Create User</button></div>
     </div>
     <div id="addMsg" class="msg" style="margin-top:5px; font-size:13px; text-align:left;"></div>
   </div>
@@ -341,33 +367,46 @@
     </div>
   </div>
 
-  <div class="admin-tools">
-     <button class="btn-small btn-primary" onclick="fetchQCData()">🔄 Refresh Data</button>
-     <div id="qcMsg" class="msg" style="margin: 0; font-size:13px; font-weight:bold;"></div>
+  <div class="qc-tabs">
+     <button id="tab_NEW" class="qc-tab active" onclick="setQCTab('NEW')">First Time Visits (New)</button>
+     <button id="tab_OM" class="qc-tab" onclick="setQCTab('OM')">O&M Visits</button>
   </div>
+
+  <div class="qc-filters">
+     <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">Zone</label><select id="qcF_zone"><option value="">All Permitted Zones</option></select></div>
+     <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">Circle</label><select id="qcF_circle" disabled><option value="">All Circles</option></select></div>
+     <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">Division</label><select id="qcF_division" disabled><option value="">All Divisions</option></select></div>
+     <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">From Date</label><input type="date" id="qcF_fromDate"></div>
+     <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">To Date</label><input type="date" id="qcF_toDate"></div>
+     <div style="display:flex; align-items:flex-end; gap:5px;">
+        <button class="btn-small btn-primary" style="height:34px;" onclick="renderQCTable()">Apply Filters</button>
+        <button class="btn-small" style="height:34px;" onclick="fetchQCData()">Refresh Data</button>
+     </div>
+  </div>
+  
+  <div id="qcMsg" class="msg" style="margin-bottom:10px; font-size:13px; font-weight:bold;"></div>
 
   <div class="admin-table-wrap">
     <table class="admin-table">
       <thead>
         <tr>
-          <th>Visit Type</th>
           <th>Meter No</th>
           <th>Date</th>
-          <th>Zone / Circle / Division</th>
+          <th>Location (Zone/Circle/Div)</th>
           <th>Submitted By</th>
           <th>Action</th>
         </tr>
       </thead>
       <tbody id="qcTableBody">
-        <tr><td colspan="6" style="text-align:center; padding: 20px;">Loading pending verifications...</td></tr>
+        <tr><td colspan="5" style="text-align:center; padding: 20px;">Loading pending verifications...</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
 <div id="modal-qc" class="modal-overlay" style="align-items: flex-start;">
-  <div class="modal" style="max-width: 600px; width:100%; margin: 20px auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:15px;">
+  <div class="modal" style="max-width: 800px; width:100%; margin: 20px auto; max-height: 90vh; overflow-y: auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:15px; position:sticky; top:0; background:#fff; z-index:10;">
        <h3 style="margin:0; color:var(--primary);">Verify & Edit Record</h3>
        <button class="btn-small" onclick="closeQCModal()">Close</button>
     </div>
@@ -377,7 +416,7 @@
     
     <div class="msg" id="qcActionMsg"></div>
     
-    <div class="modal-btns" style="display:flex; justify-content:space-between;">
+    <div class="modal-btns" style="display:flex; justify-content:space-between; position:sticky; bottom:0; background:#fff; padding-top:10px; border-top:1px solid #ddd; margin-top:20px;">
       <button class="btn-reject" onclick="rejectQC()">❌ DELETE (Reject & Nuke)</button>
       <button class="btn-primary" onclick="approveQC()">✅ APPROVE & UPDATE</button>
     </div>
@@ -422,7 +461,8 @@
   // QC State
   let qcDataRecords = [];
   let qcActiveRecord = null;
-  const qcImgs = {}; // Store replacement images for QC
+  let activeQCTab = 'NEW';
+  const qcImgs = {}; 
 
   const get = id => document.getElementById(id);
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
@@ -562,14 +602,17 @@
   function clearSearch() { get('searchInput').value = ''; adminState.search = ''; adminState.page = 1; fetchAdminData(); }
 
   window.addNewUser = function() {
-    const p = { adminCode: currentUser.empCode, name: get('n_name').value.trim(), empCode: get('n_code').value.trim().toUpperCase(), mobile: get('n_mob').value.trim(), designation: get('n_desig').value.trim(), role: get('n_role').value, zone: get('n_zone').value.trim() };
+    const selectedZones = Array.from(get('n_zone').selectedOptions).map(o => o.value).join(',');
+    
+    const p = { adminCode: currentUser.empCode, name: get('n_name').value.trim(), empCode: get('n_code').value.trim().toUpperCase(), mobile: get('n_mob').value.trim(), designation: get('n_desig').value.trim(), role: get('n_role').value, zone: selectedZones || 'All' };
     if(!p.name || !p.empCode) return msg('addMsg','Name and Emp Code are required.','err');
     
     msg('addMsg','Creating user...', 'warn');
     callApi('createUser', p).then(res => {
       if(res.success) {
         msg('addMsg', `Success: ${p.name} created.`, 'ok');
-        ['n_name','n_code','n_mob','n_desig', 'n_zone'].forEach(id=>get(id).value=''); 
+        ['n_name','n_code','n_mob','n_desig'].forEach(id=>get(id).value=''); 
+        get('n_zone').selectedIndex = 0;
         adminState.page = 1; adminState.search = ''; get('searchInput').value = ''; fetchAdminData();
       } else { msg('addMsg', res.message, 'err'); }
     }).catch(e => msg('addMsg', e.message, 'err'));
@@ -608,11 +651,19 @@
     fetchQCData();
   }
 
+  function setQCTab(tab) {
+    activeQCTab = tab;
+    document.querySelectorAll('.qc-tab').forEach(e => e.classList.remove('active'));
+    get('tab_' + tab).classList.add('active');
+    renderQCTable();
+  }
+
   function fetchQCData() {
     get('qcMsg').textContent = 'Loading Pending QC...'; get('qcMsg').className = 'msg';
     callApi('getQCData', { empCode: currentUser.empCode }).then(res => {
        if(res.success) {
-          qcDataRecords = res.records;
+          // Index tracking for easy modal access
+          qcDataRecords = res.records.map((r, i) => { r._idx = i; return r; });
           renderQCTable();
           msg('qcMsg','');
        } else { msg('qcMsg', res.message, 'err'); }
@@ -621,18 +672,32 @@
 
   function renderQCTable() {
     const tbody = get('qcTableBody'); tbody.innerHTML = '';
-    if (qcDataRecords.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No pending verifications found for your zone(s).</td></tr>'; return; }
+    
+    // Read Filters
+    const fZone = get('qcF_zone').value;
+    const fCircle = get('qcF_circle').value;
+    const fDiv = get('qcF_division').value;
+    const fFrom = get('qcF_fromDate').value;
+    const fTo = get('qcF_toDate').value;
+    
+    let filtered = qcDataRecords.filter(r => r.type === activeQCTab);
 
-    qcDataRecords.forEach((r, idx) => {
-      const typeBadge = r.type === 'NEW' ? `<span style="background:#e8f0fe;color:#1a73e8;padding:3px 6px;border-radius:4px;">NEW</span>` : `<span style="background:#fff3e0;color:#e65100;padding:3px 6px;border-radius:4px;">O&M</span>`;
+    if (fZone) filtered = filtered.filter(r => r.zone === fZone);
+    if (fCircle) filtered = filtered.filter(r => r.circle === fCircle);
+    if (fDiv) filtered = filtered.filter(r => r.division === fDiv);
+    if (fFrom) { const fromD = new Date(fFrom).getTime(); filtered = filtered.filter(r => new Date(r.date).getTime() >= fromD); }
+    if (fTo) { const toD = new Date(fTo); toD.setHours(23,59,59); filtered = filtered.filter(r => new Date(r.date).getTime() <= toD.getTime()); }
+
+    if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No pending verifications match criteria.</td></tr>`; return; }
+
+    filtered.forEach((r) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${typeBadge}</td>
         <td style="font-weight:bold;">${r.meterNo}</td>
-        <td>${r.date.split('T')[0]}</td>
+        <td>${r.date}</td>
         <td><div style="font-size:11px;">${r.zone} / ${r.circle} / ${r.division}</div></td>
         <td>${r.name}</td>
-        <td><button class="btn-small btn-primary" onclick="openQCRecord(${idx})">Review</button></td>
+        <td><button class="btn-small btn-primary" onclick="openQCRecord(${r._idx})">Review</button></td>
       `;
       tbody.appendChild(tr);
     });
@@ -647,68 +712,83 @@
     get('qcActionMsg').textContent = '';
     
     const h = [];
-    h.push(`<div class="sec-title" style="margin-top:0;">Basic Info</div>`);
-    h.push(`<p style="font-size:13px; margin:0 0 15px;"><b>Meter No:</b> ${r.meterNo}<br><b>Visit Type:</b> ${r.type}<br><b>Location:</b> ${r.zone} / ${r.circle} / ${r.division}</p>`);
-
-    // Editable Text / Dropdowns
-    h.push(`<label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">`);
-    h.push(`<label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>`);
     
-    if (r.type === 'NEW') {
-      h.push(`<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>`);
-    }
-
-    // Dependent Dropdowns (Pre-filled via JS logic below)
-    h.push(`<label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>`);
-    h.push(`<label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>`);
-    h.push(`<label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>`);
-    h.push(`<label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>`);
-    
-    if (r.type === 'NEW') {
-      h.push(`<label>Vehicle Required</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>`);
-    } else {
-      h.push(`<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`);
-    }
-
-    // Meter Readings
-    h.push(`<div class="sec-title">Meter Readings</div>`);
-    h.push(`<label>Is Meter Reading Available?</label><select id="qc_rdgAvail"><option value="${r.rdgAvail || ''}">${r.rdgAvail || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`);
-    h.push(`<div class="reading-grid">
-              <div><label>KWH</label><input type="number" step="0.01" id="qc_kwh" value="${r.kwh}"></div>
-              <div><label>KVAH</label><input type="number" step="0.01" id="qc_kvah" value="${r.kvah}"></div>
-              <div><label>KW</label><input type="number" step="0.001" id="qc_kw" value="${r.kw}"></div>
-              <div><label>KVA</label><input type="number" step="0.001" id="qc_kva" value="${r.kva}"></div>
+    // --- BATCH 1: GENERAL INFO ---
+    h.push(`<div class="qc-batch"><h4>Verification Information</h4>
+               <p style="font-size:13px; margin:0 0 15px;"><b>Location:</b> ${r.zone} / ${r.circle} / ${r.division} | <b>Date:</b> ${r.date}</p>
+               <div class="qc-split">
+                  <div class="qc-left" style="border:none;">
+                     <label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">
+                     <label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>
+                     <label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>
+                     <label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>
+                  </div>
+                  <div class="qc-right">
+                     <label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>
+                     ${r.type === 'NEW' ? `<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>` : ''}
+                     <label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>
+                     ${r.type === 'NEW' ? `<label>Vehicle Required</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>` : `<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`}
+                  </div>
+               </div>
             </div>`);
 
-    // Image Review & Replacement
-    h.push(`<div class="sec-title">Images & Verification</div>`);
-    
-    const makeImgCtrl = (label, url, key) => {
-      let l = url ? `<a href="${url}" target="_blank" class="qc-img-link">🖼️ View Uploaded ${label}</a>` : `<span style="color:#d93025;font-size:12px;">No Image Found</span>`;
-      return `<div class="qc-replace-box">
-                <div style="margin-bottom:8px;">${l}</div>
-                <label style="font-size:12px;margin:0;">Replace ${label}:</label>
-                <input type="file" accept="image/*" style="padding:5px; font-size:12px;" onchange="handleQCImg(event, '${key}')">
+    const makeImgCard = (label, url, key) => {
+      let imgHtml = url ? `<a href="${url}" target="_blank"><img src="${url}" alt="${label}"></a>` : `<div style="padding:20px;color:#d93025;background:#fce8e6;margin-bottom:10px;border-radius:4px;font-size:12px;">No Image Uploaded</div>`;
+      return `<div class="qc-img-card">
+                <label>${label}</label>
+                ${imgHtml}
+                <div style="font-size:11px; text-align:left; color:#666;">Replace Image:</div>
+                <input type="file" accept="image/*" onchange="handleQCImg(event, '${key}')">
               </div>`;
     };
 
-    if (r.type === 'NEW') {
-      h.push(makeImgCtrl('Meter Image', r.img_meter, 'img_meter'));
-      h.push(makeImgCtrl('CT Image', r.img_ct, 'img_ct'));
-      h.push(makeImgCtrl('DT Cable Image', r.img_dt, 'img_dt'));
-    } else {
-      h.push(makeImgCtrl('Before O&M', r.img_before, 'img_before'));
-      h.push(makeImgCtrl('After O&M', r.img_after, 'img_after'));
-    }
+    // --- BATCH 2: INSTALLATION / O&M PHOTOS ---
+    h.push(`<div class="qc-batch"><h4>${r.type === 'NEW' ? 'Meter Installation Verification' : 'O&M Details Verification'}</h4>
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">`);
     
-    h.push(makeImgCtrl('KWH Reading', r.img_kwh, 'img_kwh'));
-    h.push(makeImgCtrl('KVAH Reading', r.img_kvah, 'img_kvah'));
-    h.push(makeImgCtrl('KW Reading', r.img_kw, 'img_kw'));
-    h.push(makeImgCtrl('KVA Reading', r.img_kva, 'img_kva'));
+    if (r.type === 'NEW') {
+      h.push(makeImgCard('Meter Image', r.img_meter, 'img_meter'));
+      h.push(makeImgCard('Image With CT', r.img_ct, 'img_ct'));
+      h.push(makeImgCard('Image With DT & Cable', r.img_dt, 'img_dt'));
+    } else {
+      h.push(makeImgCard('Image Before O&M', r.img_before, 'img_before'));
+      h.push(makeImgCard('Image After O&M', r.img_after, 'img_after'));
+    }
+    h.push(`</div></div>`);
+
+    // --- BATCH 3: METER READINGS SPLIT VIEW ---
+    h.push(`<div class="qc-batch"><h4>Meter Readings Verification</h4>
+             <div class="qc-split">
+                <div class="qc-left">
+                   <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                      ${makeImgCard('KWH', r.img_kwh, 'img_kwh')}
+                      ${makeImgCard('KVAH', r.img_kvah, 'img_kvah')}
+                      ${makeImgCard('KW', r.img_kw, 'img_kw')}
+                      ${makeImgCard('KVA', r.img_kva, 'img_kva')}
+                   </div>
+                </div>
+                <div class="qc-right">
+                   <div style="background:#fff; padding:15px; border:1px solid #ddd; border-radius:6px; position:sticky; top:60px;">
+                       <label>Meter Reading Available?</label>
+                       <select id="qc_rdgAvail" onchange="handleQCRdgAvail(this.value)">
+                          <option value="${r.rdgAvail || ''}">${r.rdgAvail || 'Select'}</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                       </select>
+                       <div class="reading-grid">
+                          <div><label>KWH (Import)</label><input type="number" step="0.01" id="qc_kwh" value="${r.kwh}"></div>
+                          <div><label>KVAH (Import)</label><input type="number" step="0.01" id="qc_kvah" value="${r.kvah}"></div>
+                          <div><label>KW (MD)</label><input type="number" step="0.001" id="qc_kw" value="${r.kw}"></div>
+                          <div><label>KVA (MD)</label><input type="number" step="0.001" id="qc_kva" value="${r.kva}"></div>
+                       </div>
+                   </div>
+                </div>
+             </div>
+           </div>`);
 
     get('qcFormBody').innerHTML = h.join('');
 
-    // Re-populate dropdowns nicely if opts are loaded
+    // Re-populate dropdowns dynamically
     if (Object.keys(circlesByZone).length > 0) {
       const qd = get('qc_dependency'); qd.innerHTML = `<option value="${r.dependency}">${r.dependency}</option>` + get('dependency').innerHTML.replace(`<option value="">Select</option>`,'');
       const rs = get('qc_rectStatus'); rs.innerHTML = `<option value="${r.rectStatus}">${r.rectStatus}</option>` + get('rectStatus').innerHTML.replace(`<option value="">Select</option>`,'');
@@ -717,7 +797,6 @@
          const vr = get('qc_vehReq'); vr.innerHTML = `<option value="${r.vehReq}">${r.vehReq}</option>` + get('vehReq').innerHTML.replace(`<option value="">Select</option>`,'');
       }
 
-      // Add simple cascading logic for QC form
       qd.onchange = e => { populate('qc_remarkBucket', remarksByDep[e.target.value]); populate('qc_finalBucket',[]); };
       get('qc_remarkBucket').onchange = e => { populate('qc_finalBucket', finalsByPair[`${qd.value}||${e.target.value}`]); };
     }
@@ -726,6 +805,14 @@
   }
 
   function closeQCModal() { get('modal-qc').classList.remove('open'); qcActiveRecord = null; }
+
+  // Auto-zero reading functionality
+  window.handleQCRdgAvail = function(val) {
+     if(val === 'No') {
+        ['qc_kwh','qc_kvah'].forEach(id => { if(get(id)) get(id).value = '0.00'; });
+        ['qc_kw','qc_kva'].forEach(id => { if(get(id)) get(id).value = '0.000'; });
+     }
+  };
 
   window.handleQCImg = function(e, k) {
     const f = e.target.files[0]; if(!f) { delete qcImgs[k]; return; }
@@ -747,48 +834,29 @@
     const rdgAvail = v('qc_rdgAvail');
     const mNo = v('qc_meterNo');
     
-    if(!/^[A-Z]{2}[0-9]{7}$/.test(mNo)) {
-      return msg('qcActionMsg', 'Meter No must be exactly 2 letters + 7 digits.', 'err');
-    }
+    if(!/^[A-Z]{2}[0-9]{7}$/.test(mNo)) return msg('qcActionMsg', 'Meter No must be exactly 2 letters + 7 digits.', 'err');
 
     const payload = {
-      empCode: currentUser.empCode,
-      visitType: qcActiveRecord.type,
-      rowIdx: qcActiveRecord.rowIdx,
-      originalMeterNo: qcActiveRecord.meterNo, // Used for backend safety check
-      meterNo: mNo,
-      fieldRemark: v('qc_fieldRemark'),
-      dependency: v('qc_dependency'),
-      remarkBucket: v('qc_remarkBucket'),
-      finalBucket: v('qc_finalBucket'),
-      rectStatus: v('qc_rectStatus'),
-      rdgAvail: rdgAvail,
-      kwh: v('qc_kwh') || '0.00',
-      kvah: v('qc_kvah') || '0.00',
-      kw: v('qc_kw') || '0.000',
-      kva: v('qc_kva') || '0.000',
+      empCode: currentUser.empCode, visitType: qcActiveRecord.type, rowIdx: qcActiveRecord.rowIdx,
+      originalMeterNo: qcActiveRecord.meterNo, meterNo: mNo,
+      fieldRemark: v('qc_fieldRemark'), dependency: v('qc_dependency'), remarkBucket: v('qc_remarkBucket'),
+      finalBucket: v('qc_finalBucket'), rectStatus: v('qc_rectStatus'), rdgAvail: rdgAvail,
+      kwh: v('qc_kwh') || '0.00', kvah: v('qc_kvah') || '0.00', kw: v('qc_kw') || '0.000', kva: v('qc_kva') || '0.000',
       img_kwh_b64: qcImgs['img_kwh'], img_kvah_b64: qcImgs['img_kvah'], img_kw_b64: qcImgs['img_kw'], img_kva_b64: qcImgs['img_kva']
     };
 
     if(qcActiveRecord.type === 'NEW') {
-      payload.matReq = v('qc_matReq');
-      payload.vehReq = v('qc_vehReq');
-      payload.img_meter_b64 = qcImgs['img_meter'];
-      payload.img_ct_b64 = qcImgs['img_ct'];
-      payload.img_dt_b64 = qcImgs['img_dt'];
+      payload.matReq = v('qc_matReq'); payload.vehReq = v('qc_vehReq');
+      payload.img_meter_b64 = qcImgs['img_meter']; payload.img_ct_b64 = qcImgs['img_ct']; payload.img_dt_b64 = qcImgs['img_dt'];
     } else {
       payload.vehOM = v('qc_vehOM');
-      payload.img_before_b64 = qcImgs['img_before'];
-      payload.img_after_b64 = qcImgs['img_after'];
+      payload.img_before_b64 = qcImgs['img_before']; payload.img_after_b64 = qcImgs['img_after'];
     }
 
     msg('qcActionMsg', 'Saving & Uploading...', 'warn');
     callApi('approveQCRecord', payload).then(res => {
-      if(res.success) {
-         msg('qcActionMsg', '');
-         closeQCModal();
-         fetchQCData(); // Refresh table
-      } else { msg('qcActionMsg', res.message, 'err'); }
+      if(res.success) { msg('qcActionMsg', ''); closeQCModal(); fetchQCData(); } 
+      else { msg('qcActionMsg', res.message, 'err'); }
     }).catch(e => msg('qcActionMsg', e.message, 'err'));
   };
 
@@ -798,14 +866,10 @@
 
     msg('qcActionMsg', 'Queuing for deletion...', 'warn');
     callApi('rejectQCRecord', { empCode: currentUser.empCode, meterNo: qcActiveRecord.meterNo }).then(res => {
-       if(res.success) {
-          msg('qcActionMsg', '');
-          closeQCModal();
-          fetchQCData();
-       } else { msg('qcActionMsg', res.message, 'err'); }
+       if(res.success) { msg('qcActionMsg', ''); closeQCModal(); fetchQCData(); } 
+       else { msg('qcActionMsg', res.message, 'err'); }
     }).catch(e => msg('qcActionMsg', e.message, 'err'));
   };
-
 
   /* =========================================================
      FIELD VISIT FORM FLOW
@@ -907,10 +971,31 @@
   function fetchOpts() {
     callApi('getOptions').then(r => {
       circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair; remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
-      populate('zone', r.zones); populate('dependency', r.dependencies); populate('rectStatus', r.rectStatuses); populate('vehReq', r.vehicleOptions);
+      
+      populate('zone', r.zones); 
+      populate('dependency', r.dependencies); 
+      populate('rectStatus', r.rectStatuses); 
+      populate('vehReq', r.vehicleOptions);
+      
+      // Admin Zone Map
+      const aZone = get('n_zone'); 
+      if(aZone) aZone.innerHTML = '<option value="All" selected>All Zones</option>' + (r.zones||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+
+      // QC Filters Cascading Logic
+      if(currentUser && currentUser.role.toUpperCase().includes('QC') && r.zones) {
+         let permittedZones = r.zones;
+         if(!currentUser.zone.toUpperCase().includes('ALL') && currentUser.role.toUpperCase() !== 'ADMIN') {
+            permittedZones = currentUser.zone.split(',').map(z=>z.trim()).filter(z => r.zones.includes(z));
+         }
+         populate('qcF_zone', permittedZones);
+         
+         get('qcF_zone').onchange = e => { populate('qcF_circle', circlesByZone[e.target.value]); populate('qcF_division',[]); };
+         get('qcF_circle').onchange = e => { populate('qcF_division', divisionsByPair[`${get('qcF_zone').value}||${e.target.value}`]); };
+      }
     });
   }
-  function populate(id, list) { const el = get(id); el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join(''); el.disabled = !list || !list.length; }
+  
+  function populate(id, list) { const el = get(id); if(el) { el.innerHTML = '<option value="">Select</option>' + (list||[]).map(v=>`<option>${v}</option>`).join(''); el.disabled = !list || !list.length; } }
   
   get('zone').onchange = e => { populate('circle', circlesByZone[e.target.value]); populate('division',[]); };
   get('circle').onchange = e => { populate('division', divisionsByPair[`${get('zone').value}||${e.target.value}`]); };
