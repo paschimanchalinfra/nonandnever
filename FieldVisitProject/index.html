@@ -62,7 +62,7 @@
     .msg { text-align: center; margin-top: 15px; font-weight: 500; min-height: 20px; }
     .msg.err { color: var(--err); } .msg.ok { color: var(--ok); }
     
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; place-items: center; z-index: 1000; padding: 20px; overflow-y: auto;}
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; place-items: center; z-index: 1000; padding: 20px; overflow-y: auto;}
     .modal-overlay.open { display: grid; }
     .modal { background: #fff; padding: 25px; border-radius: 12px; width: 100%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .modal h3 { margin: 0 0 10px; }
@@ -122,15 +122,15 @@
     @media (max-width: 800px) { .qc-modal-layout { flex-direction: column; height: auto; display: block; } .qc-modal-left { min-height: 400px; margin-bottom: 20px; } }
     
     /* Image Carousel Viewer UI */
-    .qc-main-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; overflow: hidden; }
+    .qc-main-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; overflow: hidden; background: #000;}
     .qc-main-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-    .qc-img-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 14px; font-weight:bold; z-index: 2; }
+    .qc-img-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 14px; font-weight:bold; z-index: 2; pointer-events: none;}
     .qc-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 28px; padding: 15px 10px; cursor: pointer; z-index: 2; transition: 0.2s; }
-    .qc-nav-btn:hover { background: rgba(0,0,0,0.8); }
+    .qc-nav-btn:hover { background: rgba(0,0,0,0.9); }
     .qc-nav-prev { left: 0; } .qc-nav-next { right: 0; }
     
     .qc-thumbs { display: flex; gap: 10px; padding: 10px; background: #111; overflow-x: auto; align-items:center; }
-    .qc-thumb { flex-shrink: 0; width: 60px; height: 60px; object-fit: cover; border: 2px solid transparent; cursor: pointer; border-radius: 4px; opacity: 0.5; transition: 0.2s; background: #fff; }
+    .qc-thumb { flex-shrink: 0; width: 60px; height: 60px; object-fit: cover; border: 2px solid transparent; cursor: pointer; border-radius: 4px; opacity: 0.5; transition: 0.2s; background: #222; }
     .qc-thumb.active { border-color: var(--primary); opacity: 1; box-shadow: 0 0 8px rgba(26,115,232,0.8); }
     
     .qc-replace-bar { padding: 12px; background: #222; color: #fff; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-top: 1px solid #444; }
@@ -481,7 +481,7 @@
   let activeQCTab = 'NEW';
   let qcImagesList = []; 
   let currentQCImgIdx = 0; 
-  const qcImgs = {}; // Store replacement base64s mapped to image keys
+  const qcImgs = {}; 
 
   const get = id => document.getElementById(id);
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
@@ -677,28 +677,22 @@
      QC DASHBOARD LOGIC (Advanced Gallery Architecture)
      ========================================================= */
 
-  // CONVERTS DRIVE WEB VIEW URLS TO DIRECT IMAGE STREAM URLS
-  function convertDriveUrlToImageSrc(url) {
-  if (!url) return '';
-
-  try {
-    // If already correct format
-    if (url.includes('drive.google.com/uc?id=')) return url;
-
-    // Extract file id from all possible drive formats
-    let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (!match) match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-
-    if (match && match[1]) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-    }
-
-    return url;
-  } catch (e) {
-    console.error("Image URL parse error:", url);
-    return url;
+  // GOOGLE DRIVE URL CONVERTERS FOR IFRAME AND THUMBNAILS
+  function extractDriveId(url) {
+      if (!url) return null;
+      let match = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/d\/([a-zA-Z0-9_-]+)/);
+      return match ? match[1] : null;
   }
-}
+
+  function getDrivePreviewUrl(url) {
+      let id = extractDriveId(url);
+      return id ? `https://drive.google.com/file/d/${id}/preview` : url;
+  }
+
+  function getDriveThumbnailUrl(url) {
+      let id = extractDriveId(url);
+      return id ? `https://drive.google.com/thumbnail?id=${id}&sz=w200` : url;
+  }
 
   function loadQCPanel() {
     show('view-qc');
@@ -726,7 +720,6 @@
     get('qcMsg').textContent = 'Loading Pending QC...'; get('qcMsg').className = 'msg';
     callApi('getQCData', { empCode: currentUser.empCode }).then(res => {
        if(res.success) {
-          // Add tracking index natively for smooth retrieval
           qcDataRecords = res.records.map((r, i) => { r._idx = i; return r; });
           renderQCTable();
           msg('qcMsg','');
@@ -748,7 +741,6 @@
     if (fZone) filtered = filtered.filter(r => r.zone === fZone);
     if (fCircle) filtered = filtered.filter(r => r.circle === fCircle);
     if (fDiv) filtered = filtered.filter(r => r.division === fDiv);
-    
     if (fFrom) filtered = filtered.filter(r => r.date >= fFrom); 
     if (fTo) filtered = filtered.filter(r => r.date <= fTo);
 
@@ -767,12 +759,10 @@
     });
   }
 
-  // --- QC Layout Generation & Gallery ---
-
   function buildQCImagesList(r) {
      qcImagesList = [];
      const add = (lbl, key, url) => { 
-        qcImagesList.push({ label: lbl, key: key, url: convertDriveUrlToImageSrc(url), b64: null }); 
+        qcImagesList.push({ label: lbl, key: key, url: url, b64: null }); 
      };
      
      if(r.type === 'NEW') {
@@ -795,19 +785,36 @@
      if(!container || qcImagesList.length === 0) return;
      
      const imgObj = qcImagesList[currentQCImgIdx];
-     const displaySrc = imgObj.b64 ? ('data:image/jpeg;base64,' + imgObj.b64) : (imgObj.url || '');
-     const imgHtml = displaySrc ? `<img src="${displaySrc}" class="qc-main-img">` : `<div style="color:#666; font-size:18px;">No Image Uploaded</div>`;
+     let mainViewerHtml = '';
+       
+     if (imgObj.b64) {
+         mainViewerHtml = `<img src="data:image/jpeg;base64,${imgObj.b64}" class="qc-main-img">`;
+     } else if (imgObj.url) {
+         // Using Google's native embedded viewer via iframe for rock-solid reliability and zooming
+         mainViewerHtml = `<iframe src="${getDrivePreviewUrl(imgObj.url)}" style="width:100%; height:100%; border:none; background:#000;"></iframe>`;
+     } else {
+         mainViewerHtml = `<div style="color:#aaa; font-size:16px; text-align:center; padding: 40px; display:flex; align-items:center; justify-content:center; flex-direction:column; height:100%;">
+                             <div style="font-size:40px; margin-bottom:10px;">🚫</div>
+                             No Image Uploaded for<br><b style="color:#fff; margin-top:5px;">${imgObj.label}</b>
+                           </div>`;
+     }
      
      let thumbsHtml = qcImagesList.map((im, i) => {
-        const tSrc = im.b64 ? ('data:image/jpeg;base64,' + im.b64) : (im.url || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='); 
-        return `<img src="${tSrc}" class="qc-thumb ${i === currentQCImgIdx ? 'active' : ''}" onclick="setQCImage(${i})" title="${im.label}">`;
+        let tSrc = 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\'><rect width=\'60\' height=\'60\' fill=\'%23333\'/><text x=\'50%\' y=\'50%\' fill=\'%23fff\' font-size=\'12\' text-anchor=\'middle\' dy=\'4\'>IMG</text></svg>';
+        
+        if (im.b64) tSrc = 'data:image/jpeg;base64,' + im.b64;
+        else if (im.url) tSrc = getDriveThumbnailUrl(im.url);
+        
+        return `<div style="position:relative; display:inline-block;" onclick="setQCImage(${i})">
+                  <img src="${tSrc}" class="qc-thumb ${i === currentQCImgIdx ? 'active' : ''}" title="${im.label}" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'60\\' height=\\'60\\'><rect width=\\'60\\' height=\\'60\\' fill=\\'%23333\\'/><text x=\\'50%\\' y=\\'50%\\' fill=\\'%23fff\\' font-size=\\'12\\' text-anchor=\\'middle\\' dy=\\'4\\'>IMG</text></svg>'">
+                </div>`;
      }).join('');
 
      const html = `
-        <div class="qc-main-img-wrap">
+        <div class="qc-main-img-wrap" style="background:#000;">
            <div class="qc-img-label">${imgObj.label} ${imgObj.b64 ? '<span style="color:#ffeb3b;">(Replaced)</span>' : ''}</div>
            <button class="qc-nav-btn qc-nav-prev" onclick="navQCImage(-1)">&#10094;</button>
-           ${imgHtml}
+           ${mainViewerHtml}
            <button class="qc-nav-btn qc-nav-next" onclick="navQCImage(1)">&#10095;</button>
         </div>
         <div class="qc-replace-bar">
