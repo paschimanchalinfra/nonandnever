@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v4.2</title>
+  <title>Field Visit App v4.3</title>
   <style>
     /* --- CORE STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
@@ -11,7 +11,6 @@
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
     
-    /* Rebuilt Responsive Full-Width Container */
     .admin-container { max-width: 98%; margin: 0 auto; padding: 16px; width: 100%; } 
     
     .view-section { display: none; flex-grow: 1; }
@@ -30,9 +29,9 @@
 
     /* Form Elements */
     .sec-title { margin: 30px 0 10px; font-size: 14px; font-weight: 700; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid #e8f0fe; padding-bottom: 5px; }
-    label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; }
+    label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 15px; color: #333; }
     .req { color: var(--err); }
-    input, select, textarea { width: 100%; padding: 14px; font-size: 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; appearance: none; color: #000; }
+    input, select, textarea { width: 100%; padding: 12px; font-size: 15px; background: var(--card-bg); border: 1px solid #ccc; border-radius: 6px; appearance: none; color: #000; }
     input:focus, select:focus, textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(26,115,232,0.2); outline: none; }
     select:not([multiple]) { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23202124%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 10px; }
     select:disabled { background-color: #e9ecef; color: #6c757d; }
@@ -107,9 +106,6 @@
     .pagination button { padding: 6px 12px; cursor: pointer; border-radius: 4px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-weight: bold; }
     .pagination button:disabled { border-color: #ccc; color: #999; cursor: not-allowed; }
 
-    /* Meter Readings Sub-Grid */
-    .reading-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-
     /* QC Specific Advanced Tabs & Filters */
     .qc-tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid var(--border); }
     .qc-tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 700; color: #666; font-size: 15px; }
@@ -120,7 +116,7 @@
     
     /* New Dual-Pane Layout for QC Modal */
     .qc-modal-layout { display: flex; flex-direction: row; gap: 20px; height: calc(90vh - 120px); min-height: 500px; }
-    .qc-modal-left { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
+    .qc-modal-left { flex: 1.2; min-width: 0; display: flex; flex-direction: column; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
     .qc-modal-right { flex: 1; min-width: 0; overflow-y: auto; padding-right: 15px; background: #fff; }
     
     @media (max-width: 800px) { .qc-modal-layout { flex-direction: column; height: auto; display: block; } .qc-modal-left { min-height: 400px; margin-bottom: 20px; } }
@@ -141,9 +137,10 @@
     .qc-replace-bar input { width: auto; font-size: 13px; padding: 4px; background: #fff; color: #000; border-radius: 4px; border:none;}
     
     .qc-batch { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-    .qc-batch h4 { margin: 0 0 15px 0; color: var(--primary); text-transform: uppercase; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
+    .qc-batch h4 { margin: 0 0 15px 0; color: var(--primary); font-size: 15px; border-bottom: 1px solid #ddd; padding-bottom: 8px;}
     
-    .qc-link-btn { display: inline-block; background: #e8f0fe; color: var(--primary); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #1a73e8; margin-bottom: 10px; text-align: center; }
+    .qc-link-btn { display: inline-block; background: #e8f0fe; color: var(--primary); padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; border: 1px solid #1a73e8; margin-right: 8px; margin-bottom: 8px; text-align: center; }
+    .qc-link-btn:hover { background: #d2e3fc; }
     
     /* Help text for admin multi-select */
     .hint-txt { font-size: 11px; color: #666; margin-top: 2px;}
@@ -245,7 +242,7 @@
         </select>
         
         <div id="sec-readings" class="hidden" style="margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:8px; background:#fafafa;">
-            <div class="reading-grid">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                 <div><label>KWH (Import) <span class="req">*</span></label><input id="rdg_kwh" type="number" step="0.01" min="0" placeholder="XXXXXX.XX"></div>
                 <div><label>KVAH (Import) <span class="req">*</span></label><input id="rdg_kvah" type="number" step="0.01" min="0" placeholder="XXXXXX.XX"></div>
                 <div><label>KW (MD) <span class="req">*</span></label><input id="rdg_kw" type="number" step="0.001" min="0" placeholder="XXX.XXX"></div>
@@ -680,6 +677,15 @@
      QC DASHBOARD LOGIC (Advanced Gallery Architecture)
      ========================================================= */
 
+  // CONVERTS DRIVE WEB VIEW URLS TO DIRECT IMAGE STREAM URLS
+  function convertDriveUrlToImageSrc(url) {
+    if (!url) return '';
+    if (url.includes('drive.google.com/uc')) return url;
+    let match = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return `https://drive.google.com/uc?id=${match[1]}`;
+    return url;
+  }
+
   function loadQCPanel() {
     show('view-qc');
     get('qName').textContent = currentUser.name.split(' ')[0]; get('qCode').textContent = currentUser.empCode;
@@ -729,7 +735,6 @@
     if (fCircle) filtered = filtered.filter(r => r.circle === fCircle);
     if (fDiv) filtered = filtered.filter(r => r.division === fDiv);
     
-    // Exact string comparison safely works since format is YYYY-MM-DD uniformly generated by server
     if (fFrom) filtered = filtered.filter(r => r.date >= fFrom); 
     if (fTo) filtered = filtered.filter(r => r.date <= fTo);
 
@@ -752,7 +757,9 @@
 
   function buildQCImagesList(r) {
      qcImagesList = [];
-     const add = (lbl, key, url) => { qcImagesList.push({ label: lbl, key: key, url: url, b64: null }); };
+     const add = (lbl, key, url) => { 
+        qcImagesList.push({ label: lbl, key: key, url: convertDriveUrlToImageSrc(url), b64: null }); 
+     };
      
      if(r.type === 'NEW') {
         add('Meter Installation', 'img_meter', r.img_meter);
@@ -843,63 +850,65 @@
     h.push(`<div class="qc-modal-left" id="qcGalleryPane"></div>`);
     
     h.push(`<div class="qc-modal-right">`);
+    h.push(`<p style="font-size:12px; margin:0 0 15px; color:#555;"><b>Location:</b> ${r.zone} / ${r.circle} / ${r.division} &nbsp;|&nbsp; <b>Date:</b> ${r.date}</p>`);
 
-    // Batch 1: Info & Remarks
-    h.push(`<div class="qc-batch"><h4>Verification Information</h4>
-               <p style="font-size:13px; margin:0 0 15px;"><b>Location:</b> ${r.zone} / ${r.circle} / ${r.division} | <b>Date:</b> ${r.date}</p>
-               <label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">
-               <label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>
-               <label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>
-               <label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>
-               <label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>
-               ${r.type === 'NEW' ? `<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>` : ''}
-               <label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>
-               ${r.type === 'NEW' ? `<label>Vehicle Required</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>` : `<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`}
-            </div>`);
-
-    const actionLink = (label, key) => `<div class="qc-link-btn" onclick="triggerQCView('${key}')">👁️ View ${label} Image</div>`;
-
-    // Batch 2: Meter Readings
-    h.push(`<div class="qc-batch"><h4>Meter Readings Verification</h4>
-               <label>Meter Reading Available?</label>
-               <select id="qc_rdgAvail" onchange="handleQCRdgAvail(this.value)">
-                  <option value="${r.rdgAvail || ''}">${r.rdgAvail || 'Select'}</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-               </select>
-               
-               <div style="margin-top:15px;">
-                  <label>KWH (Import)</label>
-                  ${actionLink('KWH', 'img_kwh')}
-                  <input type="number" step="0.01" id="qc_kwh" value="${r.kwh}">
-               </div>
-               <div style="margin-top:10px;">
-                  <label>KVAH (Import)</label>
-                  ${actionLink('KVAH', 'img_kvah')}
-                  <input type="number" step="0.01" id="qc_kvah" value="${r.kvah}">
-               </div>
-               <div style="margin-top:10px;">
-                  <label>KW (MD)</label>
-                  ${actionLink('KW', 'img_kw')}
-                  <input type="number" step="0.001" id="qc_kw" value="${r.kw}">
-               </div>
-               <div style="margin-top:10px;">
-                  <label>KVA (MD)</label>
-                  ${actionLink('KVA', 'img_kva')}
-                  <input type="number" step="0.001" id="qc_kva" value="${r.kva}">
-               </div>
-            </div>`);
-
-    // Batch 3: Installation/O&M Images
-    h.push(`<div class="qc-batch"><h4>${r.type === 'NEW' ? 'Installation Images' : 'O&M Details'}</h4>`);
+    // --- Section 1: Form Details ---
+    h.push(`<div class="qc-batch"><h4>1. Form Details</h4>`);
+    h.push(`<label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">`);
+    h.push(`<label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>`);
+    
     if (r.type === 'NEW') {
-      h.push(actionLink('Meter Installation', 'img_meter'));
-      h.push(actionLink('Meter With CT', 'img_ct'));
-      h.push(actionLink('Meter With DT & Cable', 'img_dt'));
-    } else {
-      h.push(actionLink('Before O&M', 'img_before'));
-      h.push(actionLink('After O&M', 'img_after'));
+        h.push(`<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>`);
     }
+
+    h.push(`<label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>`);
+    h.push(`<label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>`);
+    h.push(`<label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>`);
+    h.push(`<label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>`);
+    
+    if (r.type === 'NEW') {
+        h.push(`<label>Vehicle required for ONM</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>`);
+    } else {
+        h.push(`<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`);
+    }
+    h.push(`</div>`);
+
+    // --- Section 2: Installation Images / O&M Images ---
+    const actionLink = (label, key) => `<div class="qc-link-btn" onclick="triggerQCView('${key}')">👁️ View ${label}</div>`;
+
+    h.push(`<div class="qc-batch"><h4>2. ${r.type === 'NEW' ? 'Installation Images' : 'O&M Images'}</h4>`);
+    if (r.type === 'NEW') {
+      h.push(actionLink('Meter Image', 'img_meter'));
+      h.push(actionLink('Meter Image with CT', 'img_ct'));
+      h.push(actionLink('Meter Image with DT & Cable', 'img_dt'));
+    } else {
+      h.push(actionLink('Image before O&M', 'img_before'));
+      h.push(actionLink('Image After O&M', 'img_after'));
+    }
+    h.push(`</div>`);
+
+    // --- Section 3: Meter Reading Data ---
+    h.push(`<div class="qc-batch"><h4>3. Meter Reading Data</h4>`);
+    h.push(`<label>Meter Reading Available?</label>
+            <select id="qc_rdgAvail" onchange="handleQCRdgAvail(this.value)">
+               <option value="${r.rdgAvail || ''}">${r.rdgAvail || 'Select'}</option>
+               <option value="Yes">Yes</option>
+               <option value="No">No</option>
+            </select>`);
+
+    h.push(`<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                <div><label>KWH (Import)</label><input type="number" step="0.01" id="qc_kwh" value="${r.kwh}"></div>
+                <div><label>KVAH (Import)</label><input type="number" step="0.01" id="qc_kvah" value="${r.kvah}"></div>
+                <div><label>KW (MD)</label><input type="number" step="0.001" id="qc_kw" value="${r.kw}"></div>
+                <div><label>KVA (MD)</label><input type="number" step="0.001" id="qc_kva" value="${r.kva}"></div>
+            </div>`);
+
+    h.push(`<div style="margin-top:15px;">
+                ${actionLink('KWH Image', 'img_kwh')}
+                ${actionLink('KVAH Image', 'img_kvah')}
+                ${actionLink('KW Image', 'img_kw')}
+                ${actionLink('KVA Image', 'img_kva')}
+            </div>`);
     h.push(`</div>`);
 
     h.push(`</div>`); // End qc-modal-right
