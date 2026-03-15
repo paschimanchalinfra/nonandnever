@@ -3,14 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Field Visit App v4.1</title>
+  <title>Field Visit App v4.2</title>
   <style>
     /* --- CORE STYLES --- */
     :root { --primary: #1a73e8; --bg: #f0f2f5; --card-bg: #ffffff; --text: #202124; --border: #80868b; --border-focus: #1a73e8; --err: #d93025; --ok: #188038; --warn: #f9ab00; }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 16px; }
     .container { max-width: 600px; margin: 0 auto; padding: 16px; min-height: 100vh; display: flex; flex-direction: column; }
-    .admin-container { max-width: 1000px; margin: 0 auto; padding: 16px; width: 100%; } 
+    
+    /* Rebuilt Responsive Full-Width Container */
+    .admin-container { max-width: 98%; margin: 0 auto; padding: 16px; width: 100%; } 
     
     .view-section { display: none; flex-grow: 1; }
     .view-section.active { display: block; animation: fade 0.3s ease-out; }
@@ -99,6 +101,7 @@
     .st-active { background: #e6f4ea; color: #137333; }
     .st-inactive { background: #fce8e6; color: #c5221f; }
     .role-select { padding: 4px; font-size: 12px; border-radius: 4px; border: 1px solid #ccc; width: 100%;}
+    .zone-select { height: 60px; }
     
     .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 15px; font-size: 14px; font-weight: 600; }
     .pagination button { padding: 6px 12px; cursor: pointer; border-radius: 4px; border: 1px solid var(--primary); background: #fff; color: var(--primary); font-weight: bold; }
@@ -107,7 +110,7 @@
     /* Meter Readings Sub-Grid */
     .reading-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
 
-    /* QC Specific Advanced Layout Styles */
+    /* QC Specific Advanced Tabs & Filters */
     .qc-tabs { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid var(--border); }
     .qc-tab { padding: 10px 20px; cursor: pointer; border: none; background: none; font-weight: 700; color: #666; font-size: 15px; }
     .qc-tab.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
@@ -115,17 +118,32 @@
     .qc-filters { display: flex; flex-wrap: wrap; gap: 10px; background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #ddd; }
     .qc-filters select, .qc-filters input { padding: 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; flex-grow: 1; min-width: 120px;}
     
+    /* New Dual-Pane Layout for QC Modal */
+    .qc-modal-layout { display: flex; flex-direction: row; gap: 20px; height: calc(90vh - 120px); min-height: 500px; }
+    .qc-modal-left { flex: 1; min-width: 0; display: flex; flex-direction: column; background: #000; border-radius: 8px; overflow: hidden; position: relative; }
+    .qc-modal-right { flex: 1; min-width: 0; overflow-y: auto; padding-right: 15px; background: #fff; }
+    
+    @media (max-width: 800px) { .qc-modal-layout { flex-direction: column; height: auto; display: block; } .qc-modal-left { min-height: 400px; margin-bottom: 20px; } }
+    
+    /* Image Carousel Viewer UI */
+    .qc-main-img-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 0; overflow: hidden; }
+    .qc-main-img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .qc-img-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 14px; font-weight:bold; z-index: 2; }
+    .qc-nav-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); border: none; color: #fff; font-size: 28px; padding: 15px 10px; cursor: pointer; z-index: 2; transition: 0.2s; }
+    .qc-nav-btn:hover { background: rgba(0,0,0,0.8); }
+    .qc-nav-prev { left: 0; } .qc-nav-next { right: 0; }
+    
+    .qc-thumbs { display: flex; gap: 10px; padding: 10px; background: #111; overflow-x: auto; align-items:center; }
+    .qc-thumb { flex-shrink: 0; width: 60px; height: 60px; object-fit: cover; border: 2px solid transparent; cursor: pointer; border-radius: 4px; opacity: 0.5; transition: 0.2s; background: #fff; }
+    .qc-thumb.active { border-color: var(--primary); opacity: 1; box-shadow: 0 0 8px rgba(26,115,232,0.8); }
+    
+    .qc-replace-bar { padding: 12px; background: #222; color: #fff; display: flex; align-items: center; justify-content: space-between; font-size: 13px; border-top: 1px solid #444; }
+    .qc-replace-bar input { width: auto; font-size: 13px; padding: 4px; background: #fff; color: #000; border-radius: 4px; border:none;}
+    
     .qc-batch { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
     .qc-batch h4 { margin: 0 0 15px 0; color: var(--primary); text-transform: uppercase; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
-    .qc-split { display: flex; gap: 20px; flex-wrap: wrap; }
-    .qc-left { flex: 1; min-width: 250px; border-right: 1px solid #ddd; padding-right: 20px; }
-    .qc-right { flex: 1; min-width: 250px; }
-    @media (max-width: 600px) { .qc-left { border-right: none; padding-right: 0; } }
     
-    .qc-img-card { margin-bottom: 15px; background: #fff; border: 1px solid #eee; padding: 10px; border-radius: 6px; text-align: center; }
-    .qc-img-card img { max-width: 100%; max-height: 250px; border-radius: 4px; display: block; margin: 0 auto 10px; object-fit: contain; background: #f0f0f0;}
-    .qc-img-card label { font-size: 13px; display: block; margin-bottom: 5px; font-weight: bold; color:var(--text);}
-    .qc-img-card input { font-size: 11px; margin-top: 5px; }
+    .qc-link-btn { display: inline-block; background: #e8f0fe; color: var(--primary); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; border: 1px solid #1a73e8; margin-bottom: 10px; text-align: center; }
     
     /* Help text for admin multi-select */
     .hint-txt { font-size: 11px; color: #666; margin-top: 2px;}
@@ -303,10 +321,10 @@
       
       <div>
          <label>QC Zone(s)</label>
-         <select id="n_zone" multiple style="height: 55px;">
+         <select id="n_zone" multiple class="zone-select">
             <option value="All" selected>All Zones</option>
          </select>
-         <div class="hint-txt">(Hold Ctrl/Cmd to select multiple)</div>
+         <div class="hint-txt">(Hold Ctrl/Cmd to multi-select)</div>
       </div>
       
       <div>
@@ -314,7 +332,6 @@
          <select id="n_role" style="height: 42px;">
             <option value="User">User</option>
             <option value="QC">QC User</option>
-            <option value="QC Contractor">QC Contractor</option>
             <option value="Admin">Admin</option>
          </select>
       </div>
@@ -340,7 +357,7 @@
           <th>Emp Code</th>
           <th>Mobile</th>
           <th>Role Access</th>
-          <th>QC Zone Map</th>
+          <th>QC Zone Map (Editable)</th>
           <th>Status</th>
           <th>Action</th>
         </tr>
@@ -380,6 +397,7 @@
      <div style="flex-grow:1;"><label style="font-size:11px;margin:0 0 2px;">To Date</label><input type="date" id="qcF_toDate"></div>
      <div style="display:flex; align-items:flex-end; gap:5px;">
         <button class="btn-small btn-primary" style="height:34px;" onclick="renderQCTable()">Apply Filters</button>
+        <button class="btn-small btn-reset" style="height:34px;" onclick="clearQCFilters()">Clear Filters</button>
         <button class="btn-small" style="height:34px;" onclick="fetchQCData()">Refresh Data</button>
      </div>
   </div>
@@ -404,19 +422,20 @@
   </div>
 </div>
 
-<div id="modal-qc" class="modal-overlay" style="align-items: flex-start;">
-  <div class="modal" style="max-width: 800px; width:100%; margin: 20px auto; max-height: 90vh; overflow-y: auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:15px; position:sticky; top:0; background:#fff; z-index:10;">
-       <h3 style="margin:0; color:var(--primary);">Verify & Edit Record</h3>
+<div id="modal-qc" class="modal-overlay" style="align-items: center;">
+  <div class="modal" style="max-width: 95vw; width:100%; margin: 0 auto; padding: 20px 25px;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding-bottom:10px; margin-bottom:15px;">
+       <h3 style="margin:0; color:var(--primary);" id="qcModalTitle">Verify & Edit Record</h3>
        <button class="btn-small" onclick="closeQCModal()">Close</button>
     </div>
 
-    <div id="qcFormBody">
-      </div>
+    <div class="qc-modal-layout" id="qcFormBody">
+       </div>
     
-    <div class="msg" id="qcActionMsg"></div>
+    <div class="msg" id="qcActionMsg" style="margin-top:0;"></div>
     
-    <div class="modal-btns" style="display:flex; justify-content:space-between; position:sticky; bottom:0; background:#fff; padding-top:10px; border-top:1px solid #ddd; margin-top:20px;">
+    <div class="modal-btns" style="display:flex; justify-content:space-between; border-top:1px solid #ddd; padding-top:15px; margin-top:10px;">
       <button class="btn-reject" onclick="rejectQC()">❌ DELETE (Reject & Nuke)</button>
       <button class="btn-primary" onclick="approveQC()">✅ APPROVE & UPDATE</button>
     </div>
@@ -454,15 +473,18 @@
   let currentUser = null;
   let currentMode = 'NEW'; 
   let circlesByZone={}, divisionsByPair={}, remarksByDep={}, finalsByPair={};
+  let globalZones = [];
   
   const imgs = { meter:null, ct:null, dt:null, before:null, after:null, img_kwh:null, img_kvah:null, img_kw:null, img_kva:null };
   let adminState = { page: 1, limit: 20, search: '', totalPages: 1 };
   
-  // QC State
+  // QC State Architecture
   let qcDataRecords = [];
   let qcActiveRecord = null;
   let activeQCTab = 'NEW';
-  const qcImgs = {}; 
+  let qcImagesList = []; 
+  let currentQCImgIdx = 0; 
+  const qcImgs = {}; // Store replacement base64s mapped to image keys
 
   const get = id => document.getElementById(id);
   const msg = (id,t,k) => { const e=get(id); e.textContent=t; e.className='msg '+(k||''); };
@@ -567,6 +589,12 @@
       const isActive = u.status.toLowerCase() === 'active';
       const statusClass = isActive ? 'st-active' : 'st-inactive';
       
+      let userZones = u.zone.split(',').map(s=>s.trim());
+      let zoneSelectHtml = `<select multiple class="role-select zone-select" onchange="changeUserZone('${u.empCode}', this)">
+         <option value="All" ${userZones.includes('All') ? 'selected' : ''}>All Zones</option>
+         ${globalZones.map(z => `<option value="${z}" ${userZones.includes(z) ? 'selected' : ''}>${z}</option>`).join('')}
+      </select>`;
+      
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight:600;">${u.name}<br><span style="font-weight:normal;color:#666;font-size:11px;">${u.designation}</span></td>
@@ -575,12 +603,11 @@
         <td>
           <select class="role-select" onchange="changeUserRole('${u.empCode}', this.value)">
             <option value="Admin" ${u.role.toLowerCase()==='admin'?'selected':''}>Admin</option>
-            <option value="QC Contractor" ${u.role.toLowerCase()==='qc contractor'?'selected':''}>QC Contractor</option>
             <option value="QC" ${u.role.toLowerCase()==='qc'?'selected':''}>QC User</option>
             <option value="User" ${u.role.toLowerCase()==='user'?'selected':''}>User</option>
           </select>
         </td>
-        <td><div style="font-size:11px; max-width:120px; overflow:hidden; text-overflow:ellipsis;" title="${u.zone}">${u.zone}</div></td>
+        <td>${zoneSelectHtml}</td>
         <td><button class="toggle-status ${statusClass}" onclick="toggleUserStatus('${u.empCode}', '${u.status}', this)">${u.status}</button></td>
         <td><button class="btn-small btn-reset" onclick="resetUserPass('${u.empCode}', '${u.name}')">Reset Pass</button></td>
       `;
@@ -633,6 +660,14 @@
       if(!res.success) alert("Failed to update role: " + res.message);
     }).catch(e => alert(e.message));
   }
+  
+  window.changeUserZone = function(empCode, selectElement) {
+    const selectedZones = Array.from(selectElement.selectedOptions).map(o => o.value).join(',');
+    if(!selectedZones) return;
+    callApi('updateUserZone', { adminCode: currentUser.empCode, empCode: empCode, zone: selectedZones }).then(res => {
+      if(!res.success) alert("Failed to update zone mapping: " + res.message);
+    }).catch(e => alert(e.message));
+  }
 
   window.resetUserPass = function(empCode, name) {
     if(!confirm(`Reset password for ${name} to "Pass@123"?`)) return;
@@ -642,7 +677,7 @@
   }
 
   /* =========================================================
-     QC DASHBOARD LOGIC 
+     QC DASHBOARD LOGIC (Advanced Gallery Architecture)
      ========================================================= */
 
   function loadQCPanel() {
@@ -658,11 +693,20 @@
     renderQCTable();
   }
 
+  window.clearQCFilters = function() {
+    get('qcF_zone').value = '';
+    get('qcF_circle').value = ''; get('qcF_circle').disabled = true;
+    get('qcF_division').value = ''; get('qcF_division').disabled = true;
+    get('qcF_fromDate').value = '';
+    get('qcF_toDate').value = '';
+    renderQCTable();
+  }
+
   function fetchQCData() {
     get('qcMsg').textContent = 'Loading Pending QC...'; get('qcMsg').className = 'msg';
     callApi('getQCData', { empCode: currentUser.empCode }).then(res => {
        if(res.success) {
-          // Index tracking for easy modal access
+          // Add tracking index natively for smooth retrieval
           qcDataRecords = res.records.map((r, i) => { r._idx = i; return r; });
           renderQCTable();
           msg('qcMsg','');
@@ -673,7 +717,6 @@
   function renderQCTable() {
     const tbody = get('qcTableBody'); tbody.innerHTML = '';
     
-    // Read Filters
     const fZone = get('qcF_zone').value;
     const fCircle = get('qcF_circle').value;
     const fDiv = get('qcF_division').value;
@@ -685,8 +728,10 @@
     if (fZone) filtered = filtered.filter(r => r.zone === fZone);
     if (fCircle) filtered = filtered.filter(r => r.circle === fCircle);
     if (fDiv) filtered = filtered.filter(r => r.division === fDiv);
-    if (fFrom) { const fromD = new Date(fFrom).getTime(); filtered = filtered.filter(r => new Date(r.date).getTime() >= fromD); }
-    if (fTo) { const toD = new Date(fTo); toD.setHours(23,59,59); filtered = filtered.filter(r => new Date(r.date).getTime() <= toD.getTime()); }
+    
+    // Exact string comparison safely works since format is YYYY-MM-DD uniformly generated by server
+    if (fFrom) filtered = filtered.filter(r => r.date >= fFrom); 
+    if (fTo) filtered = filtered.filter(r => r.date <= fTo);
 
     if (filtered.length === 0) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No pending verifications match criteria.</td></tr>`; return; }
 
@@ -697,96 +742,172 @@
         <td>${r.date}</td>
         <td><div style="font-size:11px;">${r.zone} / ${r.circle} / ${r.division}</div></td>
         <td>${r.name}</td>
-        <td><button class="btn-small btn-primary" onclick="openQCRecord(${r._idx})">Review</button></td>
+        <td><button class="btn-small btn-primary" onclick="openQCRecord(${r._idx})">Review Record</button></td>
       `;
       tbody.appendChild(tr);
     });
+  }
+
+  // --- QC Layout Generation & Gallery ---
+
+  function buildQCImagesList(r) {
+     qcImagesList = [];
+     const add = (lbl, key, url) => { qcImagesList.push({ label: lbl, key: key, url: url, b64: null }); };
+     
+     if(r.type === 'NEW') {
+        add('Meter Installation', 'img_meter', r.img_meter);
+        add('Meter With CT', 'img_ct', r.img_ct);
+        add('Meter With DT & Cable', 'img_dt', r.img_dt);
+     } else {
+        add('Image Before O&M', 'img_before', r.img_before);
+        add('Image After O&M', 'img_after', r.img_after);
+     }
+     
+     add('KWH Reading', 'img_kwh', r.img_kwh);
+     add('KVAH Reading', 'img_kvah', r.img_kvah);
+     add('KW (MD) Reading', 'img_kw', r.img_kw);
+     add('KVA (MD) Reading', 'img_kva', r.img_kva);
+  }
+
+  function renderQCGallery() {
+     const container = get('qcGalleryPane');
+     if(!container || qcImagesList.length === 0) return;
+     
+     const imgObj = qcImagesList[currentQCImgIdx];
+     const displaySrc = imgObj.b64 ? ('data:image/jpeg;base64,' + imgObj.b64) : (imgObj.url || '');
+     const imgHtml = displaySrc ? `<img src="${displaySrc}" class="qc-main-img">` : `<div style="color:#666; font-size:18px;">No Image Uploaded</div>`;
+     
+     let thumbsHtml = qcImagesList.map((im, i) => {
+        const tSrc = im.b64 ? ('data:image/jpeg;base64,' + im.b64) : (im.url || 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='); 
+        return `<img src="${tSrc}" class="qc-thumb ${i === currentQCImgIdx ? 'active' : ''}" onclick="setQCImage(${i})" title="${im.label}">`;
+     }).join('');
+
+     const html = `
+        <div class="qc-main-img-wrap">
+           <div class="qc-img-label">${imgObj.label} ${imgObj.b64 ? '<span style="color:#ffeb3b;">(Replaced)</span>' : ''}</div>
+           <button class="qc-nav-btn qc-nav-prev" onclick="navQCImage(-1)">&#10094;</button>
+           ${imgHtml}
+           <button class="qc-nav-btn qc-nav-next" onclick="navQCImage(1)">&#10095;</button>
+        </div>
+        <div class="qc-replace-bar">
+           <span>Modify <strong>${imgObj.label}</strong>:</span>
+           <input type="file" accept="image/*" onchange="handleQCImgReplace(event)">
+        </div>
+        <div class="qc-thumbs">${thumbsHtml}</div>
+     `;
+     container.innerHTML = html;
+  }
+
+  window.setQCImage = function(idx) { currentQCImgIdx = idx; renderQCGallery(); }
+  window.navQCImage = function(dir) { 
+      currentQCImgIdx += dir; 
+      if(currentQCImgIdx < 0) currentQCImgIdx = qcImagesList.length - 1;
+      if(currentQCImgIdx >= qcImagesList.length) currentQCImgIdx = 0;
+      renderQCGallery(); 
+  }
+  window.triggerQCView = function(key) {
+      const idx = qcImagesList.findIndex(im => im.key === key);
+      if(idx > -1) { setQCImage(idx); }
+  }
+
+  window.handleQCImgReplace = function(e) {
+      const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        const i = new Image();
+        i.onload = () => {
+          const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
+          c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+          const b64Data = c.toDataURL('image/jpeg',0.6).split(',')[1];
+          qcImagesList[currentQCImgIdx].b64 = b64Data;
+          qcImgs[qcImagesList[currentQCImgIdx].key] = b64Data;
+          renderQCGallery();
+        }; i.src = ev.target.result;
+      }; r.readAsDataURL(f);
   }
 
   function openQCRecord(idx) {
     qcActiveRecord = qcDataRecords[idx];
     const r = qcActiveRecord;
     
-    // Clear old replacement images
+    // Reset layout state
     Object.keys(qcImgs).forEach(k => delete qcImgs[k]);
+    currentQCImgIdx = 0;
+    buildQCImagesList(r);
     get('qcActionMsg').textContent = '';
+    get('qcModalTitle').textContent = `Verification for Meter: ${r.meterNo}`;
     
     const h = [];
     
-    // --- BATCH 1: GENERAL INFO ---
+    // Right Pane generation
+    h.push(`<div class="qc-modal-left" id="qcGalleryPane"></div>`);
+    
+    h.push(`<div class="qc-modal-right">`);
+
+    // Batch 1: Info & Remarks
     h.push(`<div class="qc-batch"><h4>Verification Information</h4>
                <p style="font-size:13px; margin:0 0 15px;"><b>Location:</b> ${r.zone} / ${r.circle} / ${r.division} | <b>Date:</b> ${r.date}</p>
-               <div class="qc-split">
-                  <div class="qc-left" style="border:none;">
-                     <label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">
-                     <label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>
-                     <label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>
-                     <label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>
-                  </div>
-                  <div class="qc-right">
-                     <label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>
-                     ${r.type === 'NEW' ? `<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>` : ''}
-                     <label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>
-                     ${r.type === 'NEW' ? `<label>Vehicle Required</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>` : `<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`}
-                  </div>
+               <label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="9" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,9);">
+               <label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>
+               <label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>
+               <label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>
+               <label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>
+               ${r.type === 'NEW' ? `<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>` : ''}
+               <label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>
+               ${r.type === 'NEW' ? `<label>Vehicle Required</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>` : `<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`}
+            </div>`);
+
+    const actionLink = (label, key) => `<div class="qc-link-btn" onclick="triggerQCView('${key}')">👁️ View ${label} Image</div>`;
+
+    // Batch 2: Meter Readings
+    h.push(`<div class="qc-batch"><h4>Meter Readings Verification</h4>
+               <label>Meter Reading Available?</label>
+               <select id="qc_rdgAvail" onchange="handleQCRdgAvail(this.value)">
+                  <option value="${r.rdgAvail || ''}">${r.rdgAvail || 'Select'}</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+               </select>
+               
+               <div style="margin-top:15px;">
+                  <label>KWH (Import)</label>
+                  ${actionLink('KWH', 'img_kwh')}
+                  <input type="number" step="0.01" id="qc_kwh" value="${r.kwh}">
+               </div>
+               <div style="margin-top:10px;">
+                  <label>KVAH (Import)</label>
+                  ${actionLink('KVAH', 'img_kvah')}
+                  <input type="number" step="0.01" id="qc_kvah" value="${r.kvah}">
+               </div>
+               <div style="margin-top:10px;">
+                  <label>KW (MD)</label>
+                  ${actionLink('KW', 'img_kw')}
+                  <input type="number" step="0.001" id="qc_kw" value="${r.kw}">
+               </div>
+               <div style="margin-top:10px;">
+                  <label>KVA (MD)</label>
+                  ${actionLink('KVA', 'img_kva')}
+                  <input type="number" step="0.001" id="qc_kva" value="${r.kva}">
                </div>
             </div>`);
 
-    const makeImgCard = (label, url, key) => {
-      let imgHtml = url ? `<a href="${url}" target="_blank"><img src="${url}" alt="${label}"></a>` : `<div style="padding:20px;color:#d93025;background:#fce8e6;margin-bottom:10px;border-radius:4px;font-size:12px;">No Image Uploaded</div>`;
-      return `<div class="qc-img-card">
-                <label>${label}</label>
-                ${imgHtml}
-                <div style="font-size:11px; text-align:left; color:#666;">Replace Image:</div>
-                <input type="file" accept="image/*" onchange="handleQCImg(event, '${key}')">
-              </div>`;
-    };
-
-    // --- BATCH 2: INSTALLATION / O&M PHOTOS ---
-    h.push(`<div class="qc-batch"><h4>${r.type === 'NEW' ? 'Meter Installation Verification' : 'O&M Details Verification'}</h4>
-              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">`);
-    
+    // Batch 3: Installation/O&M Images
+    h.push(`<div class="qc-batch"><h4>${r.type === 'NEW' ? 'Installation Images' : 'O&M Details'}</h4>`);
     if (r.type === 'NEW') {
-      h.push(makeImgCard('Meter Image', r.img_meter, 'img_meter'));
-      h.push(makeImgCard('Image With CT', r.img_ct, 'img_ct'));
-      h.push(makeImgCard('Image With DT & Cable', r.img_dt, 'img_dt'));
+      h.push(actionLink('Meter Installation', 'img_meter'));
+      h.push(actionLink('Meter With CT', 'img_ct'));
+      h.push(actionLink('Meter With DT & Cable', 'img_dt'));
     } else {
-      h.push(makeImgCard('Image Before O&M', r.img_before, 'img_before'));
-      h.push(makeImgCard('Image After O&M', r.img_after, 'img_after'));
+      h.push(actionLink('Before O&M', 'img_before'));
+      h.push(actionLink('After O&M', 'img_after'));
     }
-    h.push(`</div></div>`);
+    h.push(`</div>`);
 
-    // --- BATCH 3: METER READINGS SPLIT VIEW ---
-    h.push(`<div class="qc-batch"><h4>Meter Readings Verification</h4>
-             <div class="qc-split">
-                <div class="qc-left">
-                   <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                      ${makeImgCard('KWH', r.img_kwh, 'img_kwh')}
-                      ${makeImgCard('KVAH', r.img_kvah, 'img_kvah')}
-                      ${makeImgCard('KW', r.img_kw, 'img_kw')}
-                      ${makeImgCard('KVA', r.img_kva, 'img_kva')}
-                   </div>
-                </div>
-                <div class="qc-right">
-                   <div style="background:#fff; padding:15px; border:1px solid #ddd; border-radius:6px; position:sticky; top:60px;">
-                       <label>Meter Reading Available?</label>
-                       <select id="qc_rdgAvail" onchange="handleQCRdgAvail(this.value)">
-                          <option value="${r.rdgAvail || ''}">${r.rdgAvail || 'Select'}</option>
-                          <option value="Yes">Yes</option>
-                          <option value="No">No</option>
-                       </select>
-                       <div class="reading-grid">
-                          <div><label>KWH (Import)</label><input type="number" step="0.01" id="qc_kwh" value="${r.kwh}"></div>
-                          <div><label>KVAH (Import)</label><input type="number" step="0.01" id="qc_kvah" value="${r.kvah}"></div>
-                          <div><label>KW (MD)</label><input type="number" step="0.001" id="qc_kw" value="${r.kw}"></div>
-                          <div><label>KVA (MD)</label><input type="number" step="0.001" id="qc_kva" value="${r.kva}"></div>
-                       </div>
-                   </div>
-                </div>
-             </div>
-           </div>`);
+    h.push(`</div>`); // End qc-modal-right
 
     get('qcFormBody').innerHTML = h.join('');
+    
+    // Setup Gallery
+    renderQCGallery();
 
     // Re-populate dropdowns dynamically
     if (Object.keys(circlesByZone).length > 0) {
@@ -806,26 +927,12 @@
 
   function closeQCModal() { get('modal-qc').classList.remove('open'); qcActiveRecord = null; }
 
-  // Auto-zero reading functionality
   window.handleQCRdgAvail = function(val) {
      if(val === 'No') {
         ['qc_kwh','qc_kvah'].forEach(id => { if(get(id)) get(id).value = '0.00'; });
         ['qc_kw','qc_kva'].forEach(id => { if(get(id)) get(id).value = '0.000'; });
      }
   };
-
-  window.handleQCImg = function(e, k) {
-    const f = e.target.files[0]; if(!f) { delete qcImgs[k]; return; }
-    const r = new FileReader();
-    r.onload = ev => {
-      const i = new Image();
-      i.onload = () => {
-        const c = document.createElement('canvas'); const sc = Math.min(1000/i.width, 1000/i.height, 1);
-        c.width=i.width*sc; c.height=i.height*sc; c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-        qcImgs[k] = c.toDataURL('image/jpeg',0.6).split(',')[1];
-      }; i.src = ev.target.result;
-    }; r.readAsDataURL(f);
-  }
 
   window.approveQC = function() {
     if(!qcActiveRecord) return;
@@ -972,20 +1079,19 @@
     callApi('getOptions').then(r => {
       circlesByZone=r.circlesByZone; divisionsByPair=r.divisionsByPair; remarksByDep=r.remarksByDep; finalsByPair=r.finalsByPair;
       
+      globalZones = r.zones || [];
       populate('zone', r.zones); 
       populate('dependency', r.dependencies); 
       populate('rectStatus', r.rectStatuses); 
       populate('vehReq', r.vehicleOptions);
       
-      // Admin Zone Map
       const aZone = get('n_zone'); 
-      if(aZone) aZone.innerHTML = '<option value="All" selected>All Zones</option>' + (r.zones||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+      if(aZone) aZone.innerHTML = '<option value="All" selected>All Zones</option>' + globalZones.map(v=>`<option value="${v}">${v}</option>`).join('');
 
-      // QC Filters Cascading Logic
-      if(currentUser && currentUser.role.toUpperCase().includes('QC') && r.zones) {
-         let permittedZones = r.zones;
+      if(currentUser && currentUser.role.toUpperCase().includes('QC') && globalZones) {
+         let permittedZones = globalZones;
          if(!currentUser.zone.toUpperCase().includes('ALL') && currentUser.role.toUpperCase() !== 'ADMIN') {
-            permittedZones = currentUser.zone.split(',').map(z=>z.trim()).filter(z => r.zones.includes(z));
+            permittedZones = currentUser.zone.split(',').map(z=>z.trim()).filter(z => globalZones.includes(z));
          }
          populate('qcF_zone', permittedZones);
          
