@@ -679,12 +679,26 @@
 
   // CONVERTS DRIVE WEB VIEW URLS TO DIRECT IMAGE STREAM URLS
   function convertDriveUrlToImageSrc(url) {
-    if (!url) return '';
-    if (url.includes('drive.google.com/uc')) return url;
-    let match = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/d\/([a-zA-Z0-9_-]+)/);
-    if (match) return `https://drive.google.com/uc?id=${match[1]}`;
+  if (!url) return '';
+
+  try {
+    // If already correct format
+    if (url.includes('drive.google.com/uc?id=')) return url;
+
+    // Extract file id from all possible drive formats
+    let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (!match) match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+
+    return url;
+  } catch (e) {
+    console.error("Image URL parse error:", url);
     return url;
   }
+}
 
   function loadQCPanel() {
     show('view-qc');
