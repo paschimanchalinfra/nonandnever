@@ -1037,7 +1037,7 @@
     if (m.length === 0) return; 
 
     if (!/^[A-Z]{2}[0-9]{7}$/.test(m)) {
-       get('dupWarning').textContent = '⚠️ Invalid format. Must be exactly 2 letters + 7 digits (e.g., MI1234567).';
+       get('dupWarning').textContent = '⚠️ Invalid format. Must be exactly 2 letters + 8 digits (e.g., MI1234567).';
        get('dupWarning').style.color = 'red'; btn.disabled = true; return;
     }
 
