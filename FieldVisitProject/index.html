@@ -874,7 +874,6 @@
     // --- Section 1: Form Details ---
     h.push(`<div class="qc-batch"><h4>1. Form Details</h4>`);
     
-    // MODIFIED: Ensure length doesn't exceed 10
     h.push(`<label>Meter No (Editable)</label><input type="text" id="qc_meterNo" value="${r.meterNo}" maxlength="10" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10);">`);
     
     h.push(`<label>Field Remark</label><textarea id="qc_fieldRemark" rows="2">${r.fieldRemark}</textarea>`);
@@ -950,7 +949,7 @@
       }
 
       qd.onchange = e => { populate('qc_remarkBucket', remarksByDep[e.target.value]); populate('qc_finalBucket',[]); };
-      get('qc_remarkBucket').onchange = e => { populate('qc_finalBucket', finalsByPair[`${qd.value}||${e.target.value}`]); };
+      get('qc_remarkBucket').onchange = e => { populate('qc_finalBucket', finalsByPair[`qd.value||${e.target.value}`]); };
     }
 
     get('modal-qc').classList.add('open');
@@ -972,7 +971,6 @@
     const rdgAvail = v('qc_rdgAvail');
     const mNo = v('qc_meterNo');
     
-    // MODIFIED: Changed regex validation to expect 7 or 8 digits
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(mNo)) return msg('qcActionMsg', 'Meter No must be exactly 2 letters + 7 or 8 digits.', 'err');
 
     const payload = {
@@ -1038,7 +1036,6 @@
     
     if (m.length === 0) return; 
 
-    // MODIFIED: Changed regex validation to expect exactly 7 or 8 digits
     if (!/^[A-Z]{2}[0-9]{7,8}$/.test(m)) {
        get('dupWarning').textContent = '⚠️ Invalid format. Must be exactly 2 letters + 7 or 8 digits (e.g., MI12345678).';
        get('dupWarning').style.color = 'red'; btn.disabled = true; return;
@@ -1219,7 +1216,6 @@
     if(!p.zone || !p.circle || !p.division || !p.meterNo || !p.dependency || !p.rectStatus) return msg('formMsg','Missing selections','err');
     if(!p.fieldRemark) return msg('formMsg','Field Remark is required','err');
     
-    // MODIFIED: Changed regex validation to expect 7 or 8 digits
     if(!/^[A-Z]{2}[0-9]{7,8}$/.test(p.meterNo)) return modal('Validation Error','Invalid Meter No format. Must be exactly 2 letters followed by 7 or 8 digits.');
 
     let action = ''; setLoading(true);
