@@ -882,15 +882,16 @@
         h.push(`<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>`);
     }
 
-    h.push(`<label>Dependency</label><select id="qc_dependency"><option value="${r.dependency}">${r.dependency}</option></select>`);
-    h.push(`<label>Remark Bucket</label><select id="qc_remarkBucket"><option value="${r.remarkBucket}">${r.remarkBucket}</option></select>`);
-    h.push(`<label>Final Bucket</label><select id="qc_finalBucket"><option value="${r.finalBucket}">${r.finalBucket}</option></select>`);
-    h.push(`<label>Rectification Status</label><select id="qc_rectStatus"><option value="${r.rectStatus}">${r.rectStatus}</option></select>`);
+    // FIX IMPLEMENTED HERE: Instead of manually building <option> tags with strings, we create empty <select> blocks.
+    h.push(`<label>Dependency</label><select id="qc_dependency"></select>`);
+    h.push(`<label>Remark Bucket</label><select id="qc_remarkBucket"></select>`);
+    h.push(`<label>Final Bucket</label><select id="qc_finalBucket"></select>`);
+    h.push(`<label>Rectification Status</label><select id="qc_rectStatus"></select>`);
     
     if (r.type === 'NEW') {
-        h.push(`<label>Vehicle required for ONM</label><select id="qc_vehReq"><option value="${r.vehReq || ''}">${r.vehReq || ''}</option></select>`);
+        h.push(`<label>Vehicle required for ONM</label><select id="qc_vehReq"></select>`);
     } else {
-        h.push(`<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="${r.vehOM || ''}">${r.vehOM || ''}</option><option value="Yes">Yes</option><option value="No">No</option></select>`);
+        h.push(`<label>Vehicle use while O&M</label><select id="qc_vehOM"><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select>`);
     }
     h.push(`</div>`);
 
@@ -939,18 +940,39 @@
     // Setup Gallery
     renderQCGallery();
 
-    // Re-populate dropdowns dynamically
+    // FIX IMPLEMENTED HERE: We safely and properly clone the master dropdown lists and then 
+    // run the populate() function so that everything maps flawlessly.
     if (Object.keys(circlesByZone).length > 0) {
-      const qd = get('qc_dependency'); qd.innerHTML = `<option value="${r.dependency}">${r.dependency}</option>` + get('dependency').innerHTML.replace(`<option value="">Select</option>`,'');
-      const rs = get('qc_rectStatus'); rs.innerHTML = `<option value="${r.rectStatus}">${r.rectStatus}</option>` + get('rectStatus').innerHTML.replace(`<option value="">Select</option>`,'');
+      const safeVal = (v) => v ? String(v).trim() : '';
+      const dep = safeVal(r.dependency);
+      const rem = safeVal(r.remarkBucket);
       
-      if(r.type === 'NEW') {
-         const vr = get('qc_vehReq'); vr.innerHTML = `<option value="${r.vehReq}">${r.vehReq}</option>` + get('vehReq').innerHTML.replace(`<option value="">Select</option>`,'');
-      }
+      const setDrop = (id, srcId, val) => { const el = get(id); if(el && get(srcId)) { el.innerHTML = get(srcId).innerHTML; el.value = val; } };
+      
+      setDrop('qc_dependency', 'dependency', dep);
+      setDrop('qc_rectStatus', 'rectStatus', safeVal(r.rectStatus));
+      if(r.type === 'NEW') setDrop('qc_vehReq', 'vehReq', safeVal(r.vehReq));
+      if(r.type === 'OM') get('qc_vehOM').value = safeVal(r.vehOM);
 
-      qd.onchange = e => { populate('qc_remarkBucket', remarksByDep[e.target.value]); populate('qc_finalBucket',[]); };
-      // FIX IMPLEMENTED HERE: Added ${qd.value}
-      get('qc_remarkBucket').onchange = e => { populate('qc_finalBucket', finalsByPair[`${qd.value}||${e.target.value}`]); };
+      // We pre-fill downstream dropdowns safely based directly on the maps!
+      populate('qc_remarkBucket', remarksByDep[dep]);
+      get('qc_remarkBucket').value = rem;
+
+      populate('qc_finalBucket', finalsByPair[`${dep}||${rem}`]);
+      get('qc_finalBucket').value = safeVal(r.finalBucket);
+
+      // Finally, attach proper event listeners referencing the exact current values.
+      const qd = get('qc_dependency');
+      const qrb = get('qc_remarkBucket');
+
+      qd.onchange = e => { 
+         populate('qc_remarkBucket', remarksByDep[e.target.value]); 
+         populate('qc_finalBucket', []); 
+      };
+      
+      qrb.onchange = e => { 
+         populate('qc_finalBucket', finalsByPair[`${qd.value}||${e.target.value}`]); 
+      };
     }
 
     get('modal-qc').classList.add('open');
