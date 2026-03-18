@@ -949,7 +949,7 @@
       }
 
       qd.onchange = e => { populate('qc_remarkBucket', remarksByDep[e.target.value]); populate('qc_finalBucket',[]); };
-      // FIX: Added missing ${} around qd.value to properly pass the Dependency string
+      // FIX IMPLEMENTED HERE: Added ${qd.value}
       get('qc_remarkBucket').onchange = e => { populate('qc_finalBucket', finalsByPair[`${qd.value}||${e.target.value}`]); };
     }
 
