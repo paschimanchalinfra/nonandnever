@@ -475,7 +475,6 @@
   const imgs = { meter:null, ct:null, dt:null, before:null, after:null, img_kwh:null, img_kvah:null, img_kw:null, img_kva:null };
   let adminState = { page: 1, limit: 20, search: '', totalPages: 1 };
   
-  // QC State Architecture
   let qcDataRecords = [];
   let qcActiveRecord = null;
   let activeQCTab = 'NEW';
@@ -882,7 +881,6 @@
         h.push(`<label>Material Required for Rectification</label><textarea id="qc_matReq" rows="2">${r.matReq || ''}</textarea>`);
     }
 
-    // FIX IMPLEMENTED HERE: Instead of manually building <option> tags with strings, we create empty <select> blocks.
     h.push(`<label>Dependency</label><select id="qc_dependency"></select>`);
     h.push(`<label>Remark Bucket</label><select id="qc_remarkBucket"></select>`);
     h.push(`<label>Final Bucket</label><select id="qc_finalBucket"></select>`);
@@ -940,8 +938,6 @@
     // Setup Gallery
     renderQCGallery();
 
-    // FIX IMPLEMENTED HERE: We safely and properly clone the master dropdown lists and then 
-    // run the populate() function so that everything maps flawlessly.
     if (Object.keys(circlesByZone).length > 0) {
       const safeVal = (v) => v ? String(v).trim() : '';
       const dep = safeVal(r.dependency);
@@ -954,14 +950,12 @@
       if(r.type === 'NEW') setDrop('qc_vehReq', 'vehReq', safeVal(r.vehReq));
       if(r.type === 'OM') get('qc_vehOM').value = safeVal(r.vehOM);
 
-      // We pre-fill downstream dropdowns safely based directly on the maps!
       populate('qc_remarkBucket', remarksByDep[dep]);
       get('qc_remarkBucket').value = rem;
 
       populate('qc_finalBucket', finalsByPair[`${dep}||${rem}`]);
       get('qc_finalBucket').value = safeVal(r.finalBucket);
 
-      // Finally, attach proper event listeners referencing the exact current values.
       const qd = get('qc_dependency');
       const qrb = get('qc_remarkBucket');
 
@@ -1020,13 +1014,24 @@
     }).catch(e => msg('qcActionMsg', e.message, 'err'));
   };
 
+  // ENHANCEMENT: Triggers immediate deletion rather than routing through the batch script
   window.rejectQC = function() {
     if(!qcActiveRecord) return;
-    if(!confirm(`WARNING: This will completely delete meter ${qcActiveRecord.meterNo} and all its images from the system. Proceed?`)) return;
+    if(!confirm(`WARNING: This will completely delete meter ${qcActiveRecord.meterNo} and all its images from the system. This cannot be undone. Proceed?`)) return;
 
-    msg('qcActionMsg', 'Queuing for deletion...', 'warn');
-    callApi('rejectQCRecord', { empCode: currentUser.empCode, meterNo: qcActiveRecord.meterNo }).then(res => {
-       if(res.success) { msg('qcActionMsg', ''); closeQCModal(); fetchQCData(); } 
+    msg('qcActionMsg', 'Deleting immediately...', 'warn');
+    callApi('directDeleteQCRecord', { 
+        empCode: currentUser.empCode, 
+        meterNo: qcActiveRecord.meterNo,
+        visitType: qcActiveRecord.type,
+        rowIdx: qcActiveRecord.rowIdx
+    }).then(res => {
+       if(res.success) { 
+           msg('qcActionMsg', ''); 
+           closeQCModal(); 
+           fetchQCData(); 
+           setTimeout(() => alert("Record completely deleted from database & Drive."), 100);
+       } 
        else { msg('qcActionMsg', res.message, 'err'); }
     }).catch(e => msg('qcActionMsg', e.message, 'err'));
   };
@@ -1054,6 +1059,7 @@
 
   function unlockOMFlow() { if(currentMode === 'OM') get('om-flow-locked').classList.add('unlocked'); }
 
+  // FIX FOR ISSUE 1: Proper fallback added for error catching during duplicate verification
   get('meterNo').onblur = async function() {
     const m = this.value.trim(); const btn = get('btnSave'); get('dupWarning').textContent = ''; btn.disabled = false;
     
@@ -1073,8 +1079,15 @@
           get('dupWarning').textContent = '⚠️ Meter already visited. Submission blocked.'; get('dupWarning').style.color = 'red';
           const html = `<div class="warn-box"><strong>Already Submitted By:</strong><br>Name: ${d.name}<br>Role: ${d.designation}<br><span style="color:#d93025; font-weight:bold;">Mobile: ${d.mobile}</span><br>Date: ${d.date}<br>Meter: ${d.meter}</div><p style="font-size:13px">Use <b>O&M Visit</b> if this is maintenance.</p>`;
           modal('Duplicate Entry Detected', html);
-        } else { get('dupWarning').textContent = ''; }
-      } catch(e) { get('dupWarning').textContent = ''; }
+        } else if (res.success === false) {
+          // Fallback if script fails rather than silently succeeding 
+          get('dupWarning').textContent = '⚠️ Error verifying availability: ' + (res.message || 'Server error.'); get('dupWarning').style.color = 'red';
+        } else {
+          get('dupWarning').textContent = '✅ Available for New Visit'; get('dupWarning').style.color = 'green';
+        }
+      } catch(e) { 
+        get('dupWarning').textContent = '⚠️ Could not verify availability. Try again.'; get('dupWarning').style.color = 'red';
+      }
     }
   };
 
